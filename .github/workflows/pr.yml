@@ -18,9 +18,10 @@ jobs:
     - name: Download ArkUnpacker
       run: Invoke-WebRequest -Uri "https://github.com/isHarryh/Ark-Unpacker/releases/download/v3.2.0/ArkUnpacker-v3.2.0.exe" -OutFile ArkUnpacker.exe
     - name: List files
-      run: Get-ChildItem -Force
+      run: Get-ChildItem -Force -Recurse
     - name: Operator spine tranparency
       run: |
+        set PYTHONUTF8=1
         set PYTHONIOENCODING=utf-8
         set PYTHONLEGACYWINDOWSSTDIO=utf-8
         .\ArkUnpacker.exe -m "cb" -i "spine/operator" -o "combined/operator"
