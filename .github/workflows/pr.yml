@@ -1,0 +1,27 @@
+name: Modify PR assets
+
+on:
+  pull_request:
+    types: [ labeled ]
+
+jobs:
+  run:
+    if: ${{ github.event.label.name == 'update' }}
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout branch
+      uses: actions/checkout@v4
+    - name: Download ArkUnpacker
+      run: Invoke-WebRequest -Uri "https://github.com/isHarryh/Ark-Unpacker/releases/download/v3.2.0/ArkUnpacker-v3.2.0.exe" -OutFile ArkUnpacker.exe
+    - name: List files
+      run: Get-ChildItem -Force
+    - name: Operator spine tranparency
+      run: .\ArkUnpacker.exe -m "cb" -i "spine/operator" -o "combined/operator"
+    - name: Commit changes
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add .
+        git commit -m "Operator spine transparency"
+        git push
