@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   run:
-    if: ${{ github.event.label.name == 'update' || github.event.label.name == 'stage }}
+    if: ${{ (github.event.label.name == 'update') || (github.event.label.name == 'stage') }}
     runs-on: ubuntu-latest
 
     steps:
