@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   run:
-    if: ${{ github.event.label.name == 'update' || github.event.label.name == 'spine }}
+    if: ${{ (github.event.label.name == 'update') || (github.event.label.name == 'spine') }}
     runs-on: windows-latest
 
     steps:
