@@ -11,6 +11,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Fix detached HEAD
+      run: git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
     - name: Download ArkUnpacker source
       run: |
         Set-Location ..
@@ -19,7 +21,7 @@ jobs:
       run: pip install bson unitypy numpy pycryptodome flatbuffers
     - name: Patch ArkUnpacker to encode UTF-8
       run: (Get-Content "..\Ark-Unpacker\src\utils\GlobalMethods.py") -replace '\{text\}', '{text.encode()}' | Set-Content "..\Ark-Unpacker\src\utils\GlobalMethods.py"
-    - name: Set up operator spine inputs
+    - name: Apply operator spine transparency
       run: |
         @"
         3
@@ -28,9 +30,7 @@ jobs:
         
         
         0
-        "@ > "op.txt"
-    - name: Apply operator spine transparency
-      run: Get-Content op.txt | python ..\Ark-Unpacker\Main.py
+        "@ > python ..\Ark-Unpacker\Main.py
     - name: Commit changes
       run: |
         git config user.name "github-actions[bot]"
