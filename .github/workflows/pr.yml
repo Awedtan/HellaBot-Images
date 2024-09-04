@@ -21,7 +21,7 @@ jobs:
       run: pip install bson unitypy numpy pycryptodome flatbuffers
     - name: Patch ArkUnpacker to encode UTF-8
       run: (Get-Content "..\Ark-Unpacker\src\utils\GlobalMethods.py") -replace '\{text\}', '{text.encode()}' | Set-Content "..\Ark-Unpacker\src\utils\GlobalMethods.py"
-    - name: Apply operator spine transparency
+    - name: Set up operator spine inputs
       run: |
         @"
         3
@@ -30,7 +30,9 @@ jobs:
         
         
         0
-        "@ > python ..\Ark-Unpacker\Main.py
+        "@ > op.txt
+    - name: Apply operator spine transparency
+      run: op.txt | python ..\Ark-Unpacker\Main.py
     - name: Commit changes
       run: |
         git config user.name "github-actions[bot]"
