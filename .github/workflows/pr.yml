@@ -7,18 +7,27 @@ on:
 jobs:
   run:
     if: ${{ github.event.label.name == 'update' }}
-    runs-on: windows-2019
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
-    - name: Download ArkUnpacker
-      shell: pwsh
-      run: Invoke-WebRequest -Uri "https://github.com/isHarryh/Ark-Unpacker/releases/download/v3.2.0/ArkUnpacker-v3.2.0.exe" -OutFile ArkUnpacker.exe
-    - name: Operator spine transparency
-      shell: pwsh
-      run: .\ArkUnpacker.exe -m "cb" -i "spine/operator" -o "combined/operator"
+    - name: Download ArkUnpacker source
+      run: git clone --recurse-submodules --depth=1 https://github.com/isHarryh/Ark-Unpacker.git
+    - name: Install ArkUnpacker dependencies
+      run: pip install bson unitypy numpy pycryptodome flatbuffers
+    - name: Set up operator spine inputs
+      run: |
+        @"
+        3
+        spine/operator
+        combined
+        
+        
+        0
+        "@ > "op.txt"
+    - name: Apply operator spine transparency
+      run: Get-Content op.txt | python ./Ark-Unpacker/Main.py
     - name: Commit changes
-      shell: pwsh
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
