@@ -13,6 +13,7 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+    - run: Get-Command python
     - name: Overwrite cp1252.py with utf_8.py
       shell: pwsh
       run: Copy-Item -Path "C:\Python311\Lib\encodings\utf_8.py" -Destination "C:\Python311\Lib\encodings\cp1252.py" -Force
