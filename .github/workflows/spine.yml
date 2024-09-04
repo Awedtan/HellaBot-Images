@@ -1,4 +1,4 @@
-name: Modify PR spine assets
+name: Apply spine transparency
 on:
   pull_request:
     types: [ labeled ]
@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   run:
-    if: ${{ github.event.label.name == 'update' }}
+    if: ${{ github.event.label.name == 'update' || github.event.label.name == 'spine }}
     runs-on: windows-latest
 
     steps:
