@@ -16,7 +16,7 @@ jobs:
     - name: Install ImageMagick
       run: sudo apt install imagemagick
     - name: Resize stage previews
-      run: magick mogrify -resize 960x540! ./stages
+      run: mogrify -resize 960x540! ./stages
     - name: Commit changes
       run: |
         git config user.name "Daniel Su"
