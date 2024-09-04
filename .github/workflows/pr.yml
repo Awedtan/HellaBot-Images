@@ -12,11 +12,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Download ArkUnpacker source
-      run: git clone --recurse-submodules --depth=1 https://github.com/isHarryh/Ark-Unpacker.git
+      run: |
+        Set-Location ..
+        git clone --recurse-submodules --depth=1 https://github.com/isHarryh/Ark-Unpacker.git
     - name: Install ArkUnpacker dependencies
       run: pip install bson unitypy numpy pycryptodome flatbuffers
-    - name: Patch ArkUnpacker to print UTF-8
-      run: (Get-Content ".\Ark-Unpacker\src\utils\GlobalMethods.py") -replace '\{text\}', '{text.encode()}' | Set-Content ".\Ark-Unpacker\src\utils\GlobalMethods.py"
+    - name: Patch ArkUnpacker to encode UTF-8
+      run: (Get-Content "..\Ark-Unpacker\src\utils\GlobalMethods.py") -replace '\{text\}', '{text.encode()}' | Set-Content "..\Ark-Unpacker\src\utils\GlobalMethods.py"
     - name: Set up operator spine inputs
       run: |
         @"
@@ -28,7 +30,7 @@ jobs:
         0
         "@ > "op.txt"
     - name: Apply operator spine transparency
-      run: Get-Content op.txt | python .\Ark-Unpacker\Main.py
+      run: Get-Content op.txt | python ..\Ark-Unpacker\Main.py
     - name: Commit changes
       run: |
         git config user.name "github-actions[bot]"
