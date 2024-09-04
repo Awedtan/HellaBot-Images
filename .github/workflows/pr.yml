@@ -16,7 +16,7 @@ jobs:
     - name: Install ArkUnpacker dependencies
       run: pip install bson unitypy numpy pycryptodome flatbuffers
     - name: Patch ArkUnpacker to print UTF-8
-      run: (Get-Content ".\Ark-Unpacker\src\utils\GlobalMethods.py") -replace '\{text\}\"', '{text.encode()}"' | Set-Content ".\Ark-Unpacker\src\utils\GlobalMethods.py"
+      run: (Get-Content ".\Ark-Unpacker\src\utils\GlobalMethods.py") -replace '\{text\}', '{text.encode()}' | Set-Content ".\Ark-Unpacker\src\utils\GlobalMethods.py"
     - name: Set up operator spine inputs
       run: |
         @"
