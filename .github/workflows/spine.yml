@@ -35,6 +35,8 @@ jobs:
       run: Get-Content ..\op.txt | python ..\Ark-Unpacker\Main.py
     - name: Copy over combined operator spines
       run: Copy-Item -Path ..\combined\operator\* -Destination spine/operator -Recurse -Force
+    - name: Clean up files
+      run: Remove-Item .\ArkUnpackerLogs.log, .\ArkUnpackerConfig.json
     - name: Commit operator spine changes
       run: |
         git config user.name "Daniel Su"
