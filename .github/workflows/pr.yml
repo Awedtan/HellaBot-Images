@@ -26,7 +26,7 @@ jobs:
       run: Get-ChildItem -Force -Recurse
     - name: Operator spine transparency
       shell: pwsh
-      run: .\ArkUnpacker.exe -m "cb" -i "spine/operator" -o "combined/operator"
+      run: .\ArkUnpacker.exe -m "cb" -i "spine/operator" -o "combined/operator" > $null
     - name: Commit changes
       shell: pwsh
       run: |
