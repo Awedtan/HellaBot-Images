@@ -11,8 +11,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Fix detached HEAD
-      run: git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
+      with:
+        ref: ${{ github.head_ref }}
     - name: Download ArkUnpacker source
       run: |
         Set-Location ..
