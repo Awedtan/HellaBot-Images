@@ -27,7 +27,7 @@ jobs:
         set PYTHONUTF8=1
         set PYTHONIOENCODING=utf-8
         set PYTHONLEGACYWINDOWSSTDIO=utf-8
-        .\ArkUnpacker.exe -m "cb" -i "spine/operator" -o "combined/operator"
+        .\ArkUnpacker.exe -m "cb" -i "spine/operator" -o "combined/operator" -l 0
     - name: Commit changes
       shell: pwsh
       run: |
