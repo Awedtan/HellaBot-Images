@@ -15,6 +15,8 @@ jobs:
       run: git clone --recurse-submodules --depth=1 https://github.com/isHarryh/Ark-Unpacker.git
     - name: Install ArkUnpacker dependencies
       run: pip install bson unitypy numpy pycryptodome flatbuffers
+    - name: Patch ArkUnpacker to print UTF-8
+      run: (Get-Content ".\Ark-Unpacker\src\utils\GlobalMethods.py") -replace 'builtins\.print\(f"\\033\[\\?25l\{ctrl\}\{color\(c, bg, s\)\}\{text\}"\)', 'builtins.print(f"\033[?25l{ctrl}{color(c, bg, s)}{test.encode()}")' | Set-Content ".\Ark-Unpacker\src\utils\GlobalMethods.py"
     - name: Set up operator spine inputs
       run: |
         @"
