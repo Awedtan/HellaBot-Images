@@ -32,7 +32,7 @@ jobs:
         0
         "@ > op.txt
     - name: Apply operator spine transparency
-      run: op.txt | python ..\Ark-Unpacker\Main.py
+      run: Get-Content op.txt | python ..\Ark-Unpacker\Main.py
     - name: Commit changes
       run: |
         git config user.name "github-actions[bot]"
