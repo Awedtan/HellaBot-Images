@@ -1,4 +1,4 @@
-name: Modify PR assets
+name: Modify PR spine assets
 on:
   pull_request:
     types: [ labeled ]
@@ -26,21 +26,42 @@ jobs:
         @"
         3
         spine/operator
-        ..\combined
+        ..\combined\operator
         
         
         0
         "@ > ..\op.txt
     - name: Apply operator spine transparency
       run: Get-Content ..\op.txt | python ..\Ark-Unpacker\Main.py
-    - name: Copy over combined images
-      run: Copy-Item -Path ..\combined\* -Destination spine/operator -Recurse -Force
-    - name: Clean up files
-      run: Remove-Item .\ArkUnpackerLogs.log, .\ArkUnpackerConfig.json
-    - name: Commit changes
+    - name: Copy over combined operator spines
+      run: Copy-Item -Path ..\combined\operator\* -Destination spine/operator -Recurse -Force
+    - name: Commit operator spine changes
       run: |
         git config user.name "Daniel Su"
         git config user.email "Awedtan@users.noreply.github.com"
         git add .
         git commit -m "Operator spine transparency"
+        git push
+    - name: Set up enemy spine inputs
+      run: |
+        @"
+        3
+        spine/enemy
+        ..\combined\enemy
+        
+        
+        0
+        "@ > ..\enemy.txt
+    - name: Apply enemy spine transparency
+      run: Get-Content ..\enemy.txt | python ..\Ark-Unpacker\Main.py
+    - name: Copy over combined enemy spines
+      run: Copy-Item -Path ..\combined\enemy\* -Destination spine/enemy -Recurse -Force
+    - name: Clean up files
+      run: Remove-Item .\ArkUnpackerLogs.log, .\ArkUnpackerConfig.json
+    - name: Commit enemy spine changes
+      run: |
+        git config user.name "Daniel Su"
+        git config user.email "Awedtan@users.noreply.github.com"
+        git add .
+        git commit -m "Enemy spine transparency"
         git push
