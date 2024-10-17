@@ -1,0 +1,39 @@
+name: Rename skingroups
+on:
+  pull_request:
+    types: [ labeled ]
+permissions:
+  contents: write
+jobs:
+  run:
+    if: ${{ (github.event.label.name == 'skingroup') }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+    - name: Resize stage previews
+      run: |
+        cd skingroups
+        # remove 'year#' at start of filenames
+        for file in *.png; do
+            if [[ "$file" =~ ^[0-9]{4}#(.*) ]]; then
+                mv "$file" "${BASH_REMATCH[1]}"
+            fi
+        done
+        # remove '#number' at end of filenames
+        for file in *.png; do
+            if [[ "$file" =~ ^(.*)#([0-9]+)\.png$ ]]; then
+                mv "$file" "${BASH_REMATCH[1]}.png"
+            fi
+        done
+        # remove all '_deco' files
+        find . -name "*_deco.png" -type f -exec rm -f {} \;
+    - name: Commit changes
+      run: |
+        git config user.name "Daniel Su"
+        git config user.email "Awedtan@users.noreply.github.com"
+        git add .
+        git commit -m "Resize stage previews"
+        git push
