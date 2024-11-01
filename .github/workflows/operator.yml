@@ -17,7 +17,7 @@ jobs:
       run: |
         cd operator
         # remove '_#number' at end of filenames
-        for file in $(find . -name "*_#*.png"); do
+        find . -name "*_#*.png" -print0 | while IFS= read -r -d '' file; do
             if [[ "$file" =~ ^(.*)_#([0-9]+)\.png$ ]]; then
                 mv "$file" "${BASH_REMATCH[1]}.png"
             fi
