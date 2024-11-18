@@ -1,0 +1,92 @@
+name: Update assets
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron:  '0 0,12 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    name: Download assets
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+    - name: Install dependencies
+      working-directory: scripts
+      run: |
+        sudo apt install python3 python3-pip dotnet6 jq
+        pip install numpy playwright unitypy
+        playwright install
+        playwright install-deps
+        wget https://github.com/aelurum/AssetStudio/releases/download/ak-v1.1.0/ArknightsStudioCLI_net6_linux64.zip
+        unzip ArknightsStudioCLI_net6_linux64.zip -d ArknightsStudioCLI
+        rm ArknightsStudioCLI_net6_linux64.zip
+        echo "$(pwd)/ArknightsStudioCLI" >> "$GITHUB_PATH"
+    - name: Download assets
+      working-directory: scripts
+      run: python3 update.py
+    - name: Download APK
+      working-directory: scripts
+      run: |
+        LOCAL_URL=$(cat apk_url)
+        REMOTE_URL=$(python3 get_apk_src.py | grep .apk | head -n 1 | sed -E 's/.+<a href="https:\/\/pkg\.bili/https:\/\/pkg\.bili/' | sed -E 's/\.apk.+/\.apk/')
+        if [[ $LOCAL != $REMOTE ]]; then
+          wget $REMOTE -O arknights.apk
+          unzip -q arknights.apk -d apk
+          rm arknights.apk
+        fi
+    - name: Checkout branch
+      working-directory: scripts
+      run: |
+        VERSION=$(cat hot_update_list.json | jq -r .versionId)
+        git reset --hard
+        git pull
+        git checkout -b cn-$VERSION
+    - name: Extract operator assets
+      run: |
+        FILES=chararts/*.ab
+        FOLDER=operator/arts
+        OPTIONS="--filter-by-text characters -t sprite -g none --log-level warning"
+        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
+        ArknightsStudioCLI scripts/assets/$FILES $OPTIONS -o $FOLDER
+
+        FILES=skinpack/*.ab
+        FOLDER=operator/arts
+        OPTIONS="--filter-by-text characters -t sprite -g none --log-level warning"
+        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
+        ArknightsStudioCLI scripts/$FILES $OPTIONS -o $FOLDER
+
+        FILES=spritepack/ui_char_avatar_*.ab
+        FOLDER=operator/avatars
+        OPTIONS="--filter-by-text char_ -t sprite -g none --log-level warning"
+        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
+        ArknightsStudioCLI scripts/$FILES $OPTIONS -o $FOLDER
+
+        FILES=spritepack/building_ui_buff_skills_h1_0.ab
+        FOLDER=operator/bases
+        OPTIONS="--filter-by-text bskill -t sprite -g none --log-level warning"
+        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
+        ArknightsStudioCLI scripts/$FILES $OPTIONS -o $FOLDER
+
+        FILES=spritepack/ui_equip_big_img_hub_*.ab
+        FOLDER=operator/modules
+        OPTIONS="--filter-by-text uniequip -t sprite -g none --log-level warning"
+        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
+        ArknightsStudioCLI scripts/$FILES $OPTIONS -o $FOLDER
+
+        FILES=spritepack/skill_icons_*.ab
+        FOLDER=operator/skills
+        OPTIONS="--filter-by-text skill_icon -t sprite -g none --log-level warning"
+        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
+        ArknightsStudioCLI scripts/$FILES $OPTIONS -o $FOLDER
+
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        git commit -m "Operator assets"
+        git push
