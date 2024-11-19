@@ -1,3 +1,7 @@
-scripts/apk
-scripts/ArknightsStudioCLI
-scripts/assets
+scripts/*
+!scripts/charspine.py
+!scripts/enemyspine.py
+!scripts/get_apk_src.py
+!scripts/hot_update_list.json
+!scripts/process_files.sh
+!scripts/update.py

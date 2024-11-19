@@ -12,81 +12,290 @@ jobs:
   update:
     name: Download assets
     runs-on: ubuntu-latest
+    outputs:
+      branch-name: ${{ steps.checkout-branch.outputs.branch-name }}
+      enemy-spine-condition: ${{ steps.extract-enemy-spine.outputs.condition }}
+      operator-spine-condition: ${{ steps.extract-operator-spine.outputs.condition }}
     steps:
-    - uses: actions/checkout@v4
-      with:
-        ref: ${{ github.head_ref }}
-    - name: Install dependencies
-      working-directory: scripts
-      run: |
-        sudo apt install python3 python3-pip dotnet6 jq
-        pip install numpy playwright unitypy
-        playwright install
-        playwright install-deps
-        wget https://github.com/aelurum/AssetStudio/releases/download/ak-v1.1.0/ArknightsStudioCLI_net6_linux64.zip
-        unzip ArknightsStudioCLI_net6_linux64.zip -d ArknightsStudioCLI
-        rm ArknightsStudioCLI_net6_linux64.zip
-        echo "$(pwd)/ArknightsStudioCLI" >> "$GITHUB_PATH"
-    - name: Download assets
-      working-directory: scripts
-      run: python3 update.py
-    - name: Download APK
-      working-directory: scripts
-      run: |
-        LOCAL_URL=$(cat apk_url)
-        REMOTE_URL=$(python3 get_apk_src.py | grep .apk | head -n 1 | sed -E 's/.+<a href="https:\/\/pkg\.bili/https:\/\/pkg\.bili/' | sed -E 's/\.apk.+/\.apk/')
-        if [[ $LOCAL != $REMOTE ]]; then
-          wget $REMOTE -O arknights.apk
-          unzip -q arknights.apk -d apk
-          rm arknights.apk
-        fi
-    - name: Checkout branch
-      working-directory: scripts
-      run: |
-        VERSION=$(cat hot_update_list.json | jq -r .versionId)
-        git reset --hard
-        git pull
-        git checkout -b cn-$VERSION
-    - name: Extract operator assets
-      run: |
-        FILES=chararts/*.ab
-        FOLDER=operator/arts
-        OPTIONS="--filter-by-text characters -t sprite -g none --log-level warning"
-        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
-        ArknightsStudioCLI scripts/assets/$FILES $OPTIONS -o $FOLDER
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Install dependencies
+        working-directory: scripts
+        run: |
+          sudo apt install python3 python3-pip dotnet6 jq imagemagick
+          pip install numpy playwright unitypy==1.10.14 requests
+          pip install -U attrs
+          playwright install
+          playwright install-deps
+          wget -nv https://github.com/aelurum/AssetStudio/releases/download/ak-v1.1.0/ArknightsStudioCLI_net6_linux64.zip
+          unzip ArknightsStudioCLI_net6_linux64.zip -d ArknightsStudioCLI
+          rm ArknightsStudioCLI_net6_linux64.zip
+          sudo chmod +x ArknightsStudioCLI/ArknightsStudioCLI
+          echo "$(pwd)/ArknightsStudioCLI" >> "$GITHUB_PATH"
+      - name: Download assets
+        working-directory: scripts
+        run: python3 update.py
+      - name: Download APK
+        working-directory: scripts
+        run: |
+          if [ -f "apk_url" ]; then
+            LOCAL_URL=$(cat apk_url)
+          fi
+          REMOTE_SRC=$(python3 get_apk_src.py)
+          REMOTE_URL=$(echo $REMOTE_SRC | grep .apk | head -n 1 | sed -E 's/.+<a href="https:\/\/pkg\.bili/https:\/\/pkg\.bili/' | sed -E 's/\.apk.+/\.apk/')
+          if [[ $LOCAL_URL != $REMOTE_URL ]]; then
+            wget -nv $REMOTE_URL -O arknights.apk
+            unzip -q arknights.apk -d apk
+            rm arknights.apk
+          fi
+      - name: Checkout branch
+        id: checkout-branch
+        working-directory: scripts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          VERSION=$(cat hot_update_list.json | jq -r .versionId)
+          git checkout -b cn-$VERSION
+          git add hot_update_list.json
+          git commit -am "Update hot_update_list.json"
+          git push -f --set-upstream origin cn-$VERSION
+          echo "branch-name=cn-$VERSION" >> $GITHUB_OUTPUT
+      - name: Extract operator assets
+        run: |
+          source scripts/process_files.sh
 
-        FILES=skinpack/*.ab
-        FOLDER=operator/arts
-        OPTIONS="--filter-by-text characters -t sprite -g none --log-level warning"
-        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
-        ArknightsStudioCLI scripts/$FILES $OPTIONS -o $FOLDER
+          process_files "chararts/*.ab" "operator/arts" "--filter-by-text characters -t sprite -g none --log-level warning"
+          process_files "skinpack/*.ab" "operator/arts" "--filter-by-text characters -t sprite -g none --log-level warning"
+          process_files "spritepack/ui_char_avatar_*.ab" "operator/avatars" "--filter-by-text char_ -t sprite -g none --log-level warning"
+          process_files "spritepack/building_ui_buff_skills_h1_0.ab" "operator/bases" "--filter-by-text bskill -t sprite -g none --log-level warning"
+          process_files "spritepack/ui_equip_big_img_hub_*.ab" "operator/modules" "--filter-by-text uniequip -t sprite -g none --log-level warning"
+          process_files "spritepack/skill_icons_*.ab" "operator/skills" "--filter-by-text skill_icon -t sprite -g none --log-level warning"
 
-        FILES=spritepack/ui_char_avatar_*.ab
-        FOLDER=operator/avatars
-        OPTIONS="--filter-by-text char_ -t sprite -g none --log-level warning"
-        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
-        ArknightsStudioCLI scripts/$FILES $OPTIONS -o $FOLDER
+          cd scripts/extracted/operator
+          # remove '_#number' at end of filenames
+          find . -name "*_#*.png" -print0 | while IFS= read -r -d '' file; do
+              if [[ "$file" =~ ^(.*)_#([0-9]+)\.png$ ]]; then
+                  mv "$file" "${BASH_REMATCH[1]}.png"
+              fi
+          done
+          cd ../../..
 
-        FILES=spritepack/building_ui_buff_skills_h1_0.ab
-        FOLDER=operator/bases
-        OPTIONS="--filter-by-text bskill -t sprite -g none --log-level warning"
-        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
-        ArknightsStudioCLI scripts/$FILES $OPTIONS -o $FOLDER
+          cp -r scripts/extracted/operator/* operator/
+          git add operator/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Operator assets"
+              git push
+          fi
+      - name: Extract roguelike assets
+        run: |
+          source scripts/process_files.sh
 
-        FILES=spritepack/ui_equip_big_img_hub_*.ab
-        FOLDER=operator/modules
-        OPTIONS="--filter-by-text uniequip -t sprite -g none --log-level warning"
-        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
-        ArknightsStudioCLI scripts/$FILES $OPTIONS -o $FOLDER
+          process_files "spritepack/ui_roguelike*.ab" "rogue/items" "-t sprite -g none --log-level warning"
 
-        FILES=spritepack/skill_icons_*.ab
-        FOLDER=operator/skills
-        OPTIONS="--filter-by-text skill_icon -t sprite -g none --log-level warning"
-        ArknightsStudioCLI scripts/apk/assets/AB/Android/$FILES $OPTIONS -o $FOLDER
-        ArknightsStudioCLI scripts/$FILES $OPTIONS -o $FOLDER
+          cp -r scripts/extracted/rogue/* rogue/
+          git add rogue/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Roguelike assets"
+              git push
+          fi
+      - name: Extract sandbox assets
+        run: |
+          source scripts/process_files.sh
 
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add .
-        git commit -m "Operator assets"
-        git push
+          process_files "ui/sandboxperm/[uc]common.ab" "sandbox/items" "--filter-by-text itemicon -t sprite -g none --log-level warning"
+          process_files "spritepack/sandbox*.ab" "sandbox/stages" "-t sprite -g none --log-level warning"
+          process_files "ui/sandboxv2/topics/[uc]sandbox_1.ab" "sandbox/weather" "--filter-by-text weathertypeicons -t sprite -g none --log-level warning"
+
+          cp -r scripts/extracted/sandbox/* sandbox/
+          git add sandbox/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Sandbox assets"
+              git push
+          fi
+      - name: Extract skingroups assets
+        run: |
+          source scripts/process_files.sh
+
+          process_files "ui/skin_groups.ab" "skingroups" "-t sprite -g none --log-level warning"
+
+          cd scripts/extracted/skingroups
+          # remove 'year#' at start of filenames
+          for file in *.png; do
+              if [[ "$file" =~ ^[0-9]{4}#(.*) ]]; then
+                  mv "$file" "${BASH_REMATCH[1]}"
+              fi
+          done
+          # remove '#number' at end of filenames
+          for file in *.png; do
+              if [[ "$file" =~ ^(.*)#([0-9]+)\.png$ ]]; then
+                  mv "$file" "${BASH_REMATCH[1]}.png"
+              fi
+          done
+          # remove all '_deco' files
+          find . -name "*_deco.png" -type f -exec rm -f {} \;
+          cd ../../..
+
+          cp -r scripts/extracted/skingroups/* skingroups/
+          git add skingroups/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Skingroups assets"
+              git push
+          fi
+      - name: Extract enemy spine assets
+        id: extract-enemy-spine
+        run: |
+          source scripts/process_files.sh
+
+          process_files "battle/prefabs/enemies/enemy*.ab" "spine/enemy" "-t tex2d,textAsset -g none --log-level warning"
+          python3 scripts/enemyspine.py scripts/extracted/spine/enemy
+
+          cp -r scripts/extracted/spine/enemy/* spine/enemy/
+          git add spine/enemy/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Enemy spine assets"
+              echo "condition=true" >> $GITHUB_OUTPUT
+              git push
+          fi
+      - name: Extract operator spine assets
+        id: extract-operator-spine
+        run: |
+          FILES=chararts/char*.ab
+          FOLDER=spine/operator
+          mkdir -p scripts/assets/$FOLDER scripts/extracted/$FOLDER
+          cp -f scripts/apk/assets/AB/Android/$FILES scripts/assets/$FOLDER || :
+          cp -f scripts/download/$FILES scripts/assets/$FOLDER || :
+          python3 scripts/charspine.py scripts/assets/$FOLDER scripts/extracted/$FOLDER
+
+          FILES=skinpack/char*.ab
+          FOLDER=spine/operator
+          mkdir -p scripts/assets/$FOLDER scripts/extracted/$FOLDER
+          cp -f scripts/apk/assets/AB/Android/$FILES scripts/assets/$FOLDER || :
+          cp -f scripts/download/$FILES scripts/assets/$FOLDER || :
+          python3 scripts/charspine.py scripts/assets/$FOLDER scripts/extracted/$FOLDER
+
+          cp -r scripts/extracted/spine/operator/* spine/operator/
+          git add spine/operator/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Operator spine assets"
+              echo "condition=true" >> $GITHUB_OUTPUT
+              git push
+          fi
+      - name: Extract stage assets
+        run: |
+          source scripts/process_files.sh
+
+          process_files "arts/ui/stage_mappreview*.ab" "stages" "-t sprite -g none --log-level warning"
+
+          mogrify -strip -resize 960x540! scripts/extracted/stages/*.png
+
+          cp -r scripts/extracted/stages/* stages/
+          git add stages/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Stage assets"
+              git push
+          fi
+
+  enemy-spine:
+    name: Apply enemy spine transparency
+    needs: update
+    if: needs.update.outputs.enemy-spine-condition == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: needs.update.outputs.branch-name
+      - name: Download ArkUnpacker source
+        run: |
+          Set-Location ..
+          git clone --recurse-submodules --depth=1 --branch v3.3.0 https://github.com/isHarryh/Ark-Unpacker.git
+      - name: Install ArkUnpacker dependencies
+        run: pip install bson unitypy numpy pycryptodome flatbuffers
+      - name: Patch ArkUnpacker to encode UTF-8
+        run: (Get-Content ..\Ark-Unpacker\src\utils\GlobalMethods.py) -replace '\{text\}', '{text.encode()}' | Set-Content ..\Ark-Unpacker\src\utils\GlobalMethods.py
+      - name: Set up enemy spine inputs
+        run: |
+          @"
+          3
+          spine/enemy
+          ..\combined\enemy
+
+
+          0
+          "@ > ..\enemy.txt
+      - name: Apply enemy spine transparency
+        run: Get-Content ..\enemy.txt | python ..\Ark-Unpacker\Main.py
+      - name: Copy over combined enemy spines
+        run: Copy-Item -Path ..\combined\enemy\* -Destination spine/enemy -Recurse -Force
+      - name: Clean up files
+        run: Remove-Item .\ArkUnpackerLogs.log, .\ArkUnpackerConfig.json
+      - name: Commit enemy spine changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add spine/enemy
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Enemy spine transparency"
+              git push
+          fi
+
+  operator-spine:
+    name: Apply operator spine transparency
+    needs: update
+    if: needs.update.outputs.operator-spine-condition == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: needs.update.outputs.branch-name
+      - name: Download ArkUnpacker source
+        run: |
+          Set-Location ..
+          git clone --recurse-submodules --depth=1 --branch v3.3.0 https://github.com/isHarryh/Ark-Unpacker.git
+      - name: Install ArkUnpacker dependencies
+        run: pip install bson unitypy numpy pycryptodome flatbuffers
+      - name: Patch ArkUnpacker to encode UTF-8
+        run: (Get-Content ..\Ark-Unpacker\src\utils\GlobalMethods.py) -replace '\{text\}', '{text.encode()}' | Set-Content ..\Ark-Unpacker\src\utils\GlobalMethods.py
+      - name: Set up operator spine inputs
+        run: |
+          @"
+          3
+          spine/operator
+          ..\combined\operator
+
+
+          0
+          "@ > ..\op.txt
+      - name: Apply operator spine transparency
+        run: Get-Content ..\op.txt | python ..\Ark-Unpacker\Main.py
+      - name: Copy over combined operator spines
+        run: Copy-Item -Path ..\combined\operator\* -Destination spine/operator -Recurse -Force
+      - name: Clean up files
+        run: Remove-Item .\ArkUnpackerLogs.log, .\ArkUnpackerConfig.json
+      - name: Commit operator spine changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add spine/operator
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Operator spine transparency"
+              git push
+          fi
