@@ -210,10 +210,10 @@ jobs:
               git push
           fi
 
-  enemy-spine:
-    name: Apply enemy spine transparency
+  spine:
+    name: Apply spine transparency
     needs: update
-    if: needs.update.outputs.enemy-spine-condition == 'true'
+    if: needs.update.outputs.enemy-spine-condition == 'true' || needs.update.outputs.operator-spine-condition == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -228,6 +228,7 @@ jobs:
       - name: Patch ArkUnpacker to encode UTF-8
         run: (Get-Content ..\Ark-Unpacker\src\utils\GlobalMethods.py) -replace '\{text\}', '{text.encode()}' | Set-Content ..\Ark-Unpacker\src\utils\GlobalMethods.py
       - name: Set up enemy spine inputs
+        if: needs.update.outputs.enemy-spine-condition == 'true'
         run: |
           @"
           3
@@ -238,12 +239,16 @@ jobs:
           0
           "@ > ..\enemy.txt
       - name: Apply enemy spine transparency
+        if: needs.update.outputs.enemy-spine-condition == 'true'
         run: Get-Content ..\enemy.txt | python ..\Ark-Unpacker\Main.py
       - name: Copy over combined enemy spines
+        if: needs.update.outputs.enemy-spine-condition == 'true'
         run: Copy-Item -Path ..\combined\enemy\* -Destination spine/enemy -Recurse -Force
       - name: Clean up files
+        if: needs.update.outputs.enemy-spine-condition == 'true'
         run: Remove-Item .\ArkUnpackerLogs.log, .\ArkUnpackerConfig.json
       - name: Commit enemy spine changes
+        if: needs.update.outputs.enemy-spine-condition == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -254,25 +259,8 @@ jobs:
             git commit -m "Enemy spine transparency"
             git push
           }
-
-  operator-spine:
-    name: Apply operator spine transparency
-    needs: update
-    if: needs.update.outputs.operator-spine-condition == 'true'
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.update.outputs.branch-name }}
-      - name: Download ArkUnpacker source
-        run: |
-          Set-Location ..
-          git clone --recurse-submodules --depth=1 --branch v3.3.0 https://github.com/isHarryh/Ark-Unpacker.git
-      - name: Install ArkUnpacker dependencies
-        run: pip install bson unitypy numpy pycryptodome flatbuffers
-      - name: Patch ArkUnpacker to encode UTF-8
-        run: (Get-Content ..\Ark-Unpacker\src\utils\GlobalMethods.py) -replace '\{text\}', '{text.encode()}' | Set-Content ..\Ark-Unpacker\src\utils\GlobalMethods.py
       - name: Set up operator spine inputs
+        if: needs.update.outputs.operator-spine-condition == 'true'
         run: |
           @"
           3
@@ -283,12 +271,16 @@ jobs:
           0
           "@ > ..\op.txt
       - name: Apply operator spine transparency
+        if: needs.update.outputs.operator-spine-condition == 'true'
         run: Get-Content ..\op.txt | python ..\Ark-Unpacker\Main.py
       - name: Copy over combined operator spines
+        if: needs.update.outputs.operator-spine-condition == 'true'
         run: Copy-Item -Path ..\combined\operator\* -Destination spine/operator -Recurse -Force
       - name: Clean up files
+        if: needs.update.outputs.operator-spine-condition == 'true'
         run: Remove-Item .\ArkUnpackerLogs.log, .\ArkUnpackerConfig.json
       - name: Commit operator spine changes
+        if: needs.update.outputs.operator-spine-condition == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
