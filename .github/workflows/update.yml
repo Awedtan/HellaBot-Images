@@ -218,7 +218,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: needs.update.outputs.branch-name
+          ref: ${{ needs.update.outputs.branch-name }}
       - name: Download ArkUnpacker source
         run: |
           Set-Location ..
@@ -263,7 +263,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: needs.update.outputs.branch-name
+          ref: ${{ needs.update.outputs.branch-name }}
       - name: Download ArkUnpacker source
         run: |
           Set-Location ..
