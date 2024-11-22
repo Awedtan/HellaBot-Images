@@ -28,7 +28,7 @@ else:
         old_hot_update_list = json.load(f)
 
 if(old_hot_update_list['versionId'] == res_version):
-    print('No new updates found.')
+    print('Up to date.')
     exit(0)
 
 download_dir = 'download'

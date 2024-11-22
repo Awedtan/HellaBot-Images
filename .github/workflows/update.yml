@@ -34,9 +34,18 @@ jobs:
           sudo chmod +x ArknightsStudioCLI/ArknightsStudioCLI
           echo "$(pwd)/ArknightsStudioCLI" >> "$GITHUB_PATH"
       - name: Download assets
+        id: download-assets
         working-directory: scripts
-        run: python3 update.py
+        run: |
+          output=$(python3 update.py)
+          echo $output
+          if [[ $output == *"Up to date"* ]]; then
+            echo "condition=false" >> $GITHUB_OUTPUT
+          else
+            echo "condition=true" >> $GITHUB_OUTPUT
+          fi
       - name: Download APK
+        if: steps.download-assets.outputs.condition == 'true'
         working-directory: scripts
         run: |
           if [ -f "apk_url" ]; then
@@ -50,18 +59,24 @@ jobs:
             rm arknights.apk
           fi
       - name: Checkout branch
+        if: steps.download-assets.outputs.condition == 'true'
         id: checkout-branch
         working-directory: scripts
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           VERSION=$(cat hot_update_list.json | jq -r .versionId)
-          git checkout -b cn-$VERSION
+          git checkout -b cn-$VERSION-test
           git add hot_update_list.json
-          git commit -am "Update hot_update_list.json"
-          git push -f --set-upstream origin cn-$VERSION
-          echo "branch-name=cn-$VERSION" >> $GITHUB_OUTPUT
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to commit."
+          else
+            git commit -am "Update hot_update_list.json"
+          fi
+          git push -f --set-upstream origin cn-$VERSION-test
+          echo "branch-name=cn-$VERSION-test" >> $GITHUB_OUTPUT
       - name: Extract operator assets
+        if: steps.download-assets.outputs.condition == 'true'
         run: |
           source scripts/process_files.sh
 
@@ -90,6 +105,7 @@ jobs:
               git push
           fi
       - name: Extract roguelike assets
+        if: steps.download-assets.outputs.condition == 'true'
         run: |
           source scripts/process_files.sh
 
@@ -104,6 +120,7 @@ jobs:
               git push
           fi
       - name: Extract sandbox assets
+        if: steps.download-assets.outputs.condition == 'true'
         run: |
           source scripts/process_files.sh
 
@@ -120,6 +137,7 @@ jobs:
               git push
           fi
       - name: Extract skingroups assets
+        if: steps.download-assets.outputs.condition == 'true'
         run: |
           source scripts/process_files.sh
 
@@ -151,6 +169,7 @@ jobs:
               git push
           fi
       - name: Extract enemy spine assets
+        if: steps.download-assets.outputs.condition == 'true'
         id: extract-enemy-spine
         run: |
           source scripts/process_files.sh
@@ -168,6 +187,7 @@ jobs:
               git push
           fi
       - name: Extract operator spine assets
+        if: steps.download-assets.outputs.condition == 'true'
         id: extract-operator-spine
         run: |
           FILES=chararts/char*.ab
@@ -194,6 +214,7 @@ jobs:
               git push
           fi
       - name: Extract stage assets
+        if: steps.download-assets.outputs.condition == 'true'
         run: |
           source scripts/process_files.sh
 
@@ -291,3 +312,15 @@ jobs:
             git commit -m "Operator spine transparency"
             git push
           }
+
+  pr:
+    needs: [update, spine]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/workflows
+      - name: Create pull request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: gh pr create --title "Update assets" --body "Merge ${{ needs.update.outputs.branch-name }} into main" --base main --head ${{ needs.update.outputs.branch-name }}
