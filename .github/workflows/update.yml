@@ -16,6 +16,7 @@ jobs:
       branch-name: ${{ steps.checkout-branch.outputs.branch-name }}
       enemy-spine-condition: ${{ steps.extract-enemy-spine.outputs.condition }}
       operator-spine-condition: ${{ steps.extract-operator-spine.outputs.condition }}
+      update-condition: ${{ steps.download-assets.outputs.condition }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -182,6 +183,7 @@ jobs:
           git add spine/enemy/
           if git diff-index --quiet HEAD --; then
               echo "No changes to commit."
+              echo "condition=false" >> $GITHUB_OUTPUT
           else
               git commit -m "Enemy spine assets"
               echo "condition=true" >> $GITHUB_OUTPUT
@@ -209,6 +211,7 @@ jobs:
           git add spine/operator/
           if git diff-index --quiet HEAD --; then
               echo "No changes to commit."
+              echo "condition=false" >> $GITHUB_OUTPUT
           else
               git commit -m "Operator spine assets"
               echo "condition=true" >> $GITHUB_OUTPUT
@@ -317,6 +320,7 @@ jobs:
   pr:
     name: Create pull request
     needs: [update, spine]
+    if: needs.update.outputs.update-condition == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -325,4 +329,4 @@ jobs:
       - name: Create pull request
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: gh pr create --title "Update assets" --body "Merge ${{ needs.update.outputs.branch-name }} into main" --base main --head ${{ needs.update.outputs.branch-name }}
+        run: gh pr create --title "[Update] ${{ needs.update.outputs.branch-name }}" --body "Merge ${{ needs.update.outputs.branch-name }} into main" --base main --head ${{ needs.update.outputs.branch-name }}
