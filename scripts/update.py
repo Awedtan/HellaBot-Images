@@ -28,10 +28,11 @@ else:
         old_hot_update_list = json.load(f)
 
 if(old_hot_update_list['versionId'] == res_version):
-    print('No new updates found.')
+    print('Up to date.')
     exit(0)
 
-os.makedirs('assets', exist_ok=True)
+download_dir = 'download'
+os.makedirs(download_dir, exist_ok=True)
 hot_update_list = requests.get(f'{assets_url}/hot_update_list.json').json()
 for item in hot_update_list['abInfos']:
     filename = item['name']
@@ -42,23 +43,23 @@ for item in hot_update_list['abInfos']:
 
     print(filename)
     filename = filename.replace('/', '_').replace('#', '__').split('.')[0] + '.dat'
-    retries = 3
+    retries = 5
     for attempt in range(retries):
         try:
             response = requests.get(f'{assets_url}/{filename}')
             response.raise_for_status()
-            with open(f'assets/{filename}', 'wb') as f:
+            with open(f'{download_dir}/{filename}', 'wb') as f:
                 f.write(response.content)
-            os.system(f'unzip -q assets/{filename} -d assets/')
+            os.system(f'unzip -q {download_dir}/{filename} -d {download_dir}/')
             time.sleep(0.5)
-            os.remove(f'assets/{filename}')
+            os.remove(f'{download_dir}/{filename}')
             break
         except requests.exceptions.RequestException as e:
             print(f'Attempt {attempt + 1} failed: {e}')
             if attempt == retries - 1:
                 print(f'Failed to download {filename} after {retries} attempts.')
             else:
-                time.sleep(3)
+                time.sleep(attempt + 1)
 
 with open('hot_update_list.json', 'w') as f:
     f.write(json.dumps(hot_update_list))
