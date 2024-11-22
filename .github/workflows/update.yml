@@ -66,15 +66,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           VERSION=$(cat hot_update_list.json | jq -r .versionId)
-          git checkout -b cn-$VERSION-test
+          BRANCH_NAME=cn-$VERSION
+          git checkout -b $BRANCH_NAME
           git add hot_update_list.json
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit."
           else
             git commit -am "Update hot_update_list.json"
           fi
-          git push -f --set-upstream origin cn-$VERSION-test
-          echo "branch-name=cn-$VERSION-test" >> $GITHUB_OUTPUT
+          git push -f --set-upstream origin $BRANCH_NAME
+          echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
       - name: Extract operator assets
         if: steps.download-assets.outputs.condition == 'true'
         run: |
@@ -314,6 +315,7 @@ jobs:
           }
 
   pr:
+    name: Create pull request
     needs: [update, spine]
     runs-on: ubuntu-latest
     steps:
