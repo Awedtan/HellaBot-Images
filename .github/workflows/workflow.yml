@@ -45,7 +45,6 @@ jobs:
         working-directory: scripts
         run: |
           python3 update.py -s ${{ inputs.server }} -hu ${{ inputs.server }}-hot_update_list.json | tee update.out
-          cat update.out
           if [[ $(cat update.out) == *"Up to date"* ]]; then
             echo "condition=false" >> $GITHUB_OUTPUT
           else
@@ -246,9 +245,6 @@ jobs:
     needs: update
     if: needs.update.outputs.enemy-spine-condition == 'true' || needs.update.outputs.operator-spine-condition == 'true'
     runs-on: windows-latest
-    strategy:
-        matrix:
-          server: [cn, en]
     steps:
       - uses: actions/checkout@v4
         with:
