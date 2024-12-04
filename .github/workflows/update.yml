@@ -10,10 +10,12 @@ permissions:
 
 jobs:
   update:
+    name: Update assets
     strategy:
       fail-fast: false
       matrix:
         server: [cn, en]
     uses: ./.github/workflows/workflow.yml
+    secrets: inherit
     with:
       server: ${{ matrix.server }}
