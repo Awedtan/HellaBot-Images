@@ -11,6 +11,7 @@ permissions:
 jobs:
   update:
     strategy:
+      fail-fast: false
       matrix:
         server: [cn, en]
     uses: ./.github/workflows/workflow.yml

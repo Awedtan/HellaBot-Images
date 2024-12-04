@@ -43,14 +43,14 @@ jobs:
         id: download-assets
         working-directory: scripts
         run: |
-          python3 update.py -s ${{ inputs.server }} -hu ${{ inputs.server }}-hot-update.json | tee update.out
+          python3 update.py -s ${{ inputs.server }} -hu ${{ inputs.server }}-hot_update_list.json | tee update.out
           if [[ $(cat update.out) == *"Up to date"* ]]; then
             echo "condition=false" >> $GITHUB_OUTPUT
           else
             echo "condition=true" >> $GITHUB_OUTPUT
           fi
       - name: Download APK
-        if: steps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.condition == 'true' && ${{ inputs.server }} == 'cn'
         working-directory: scripts
         run: |
           if [ -f "apk_url" ]; then
@@ -70,14 +70,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          VERSION=$(cat hot_update_list.json | jq -r .versionId)
+          VERSION=$(cat ${{ inputs.server }}-hot_update_list.json | jq -r .versionId)
           BRANCH_NAME=${{ inputs.server }}-$VERSION
           git checkout -b $BRANCH_NAME
-          git add hot_update_list.json
+          git add ${{ inputs.server }}-hot_update_list.json
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit."
           else
-            git commit -am "Update hot_update_list.json"
+            git commit -am "Update ${{ inputs.server }}-hot_update_list.json"
           fi
           git push -f --set-upstream origin $BRANCH_NAME
           echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
