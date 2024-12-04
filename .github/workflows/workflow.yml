@@ -45,13 +45,14 @@ jobs:
         working-directory: scripts
         run: |
           python3 update.py -s ${{ inputs.server }} -hu ${{ inputs.server }}-hot_update_list.json | tee update.out
+          cat update.out
           if [[ $(cat update.out) == *"Up to date"* ]]; then
             echo "condition=false" >> $GITHUB_OUTPUT
           else
             echo "condition=true" >> $GITHUB_OUTPUT
           fi
       - name: Download APK
-        if: steps.download-assets.outputs.condition == 'true' && ${{ inputs.server }} == 'cn'
+        if: steps.download-assets.outputs.condition == 'true' && inputs.server == 'cn'
         working-directory: scripts
         run: |
           if [ -f "apk_url" ]; then
