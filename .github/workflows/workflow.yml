@@ -24,8 +24,9 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           sparse-checkout: |
-            .github/workflows
-            scripts
+            !*.png
+            *
+          sparse-checkout-cone-mode: false
       - name: Install dependencies
         working-directory: scripts
         run: |
