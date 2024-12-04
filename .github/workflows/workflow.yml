@@ -62,7 +62,7 @@ jobs:
             rm arknights.apk
           fi
       - name: Checkout branch
-        if: extract_absteps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.condition == 'true'
         id: checkout-branch
         working-directory: scripts
         run: |
@@ -80,7 +80,7 @@ jobs:
           git push -f --set-upstream origin $BRANCH_NAME
           echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
       - name: Extract operator assets
-        if: extract_absteps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.condition == 'true'
         run: |
           source scripts/extract_ab.sh
 
@@ -109,7 +109,7 @@ jobs:
               git push
           fi
       - name: Extract roguelike assets
-        if: extract_absteps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.condition == 'true'
         run: |
           source scripts/extract_ab.sh
 
@@ -124,7 +124,7 @@ jobs:
               git push
           fi
       - name: Extract sandbox assets
-        if: extract_absteps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.condition == 'true'
         run: |
           source scripts/extract_ab.sh
 
@@ -141,7 +141,7 @@ jobs:
               git push
           fi
       - name: Extract skingroups assets
-        if: extract_absteps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.condition == 'true'
         run: |
           source scripts/extract_ab.sh
 
@@ -173,7 +173,7 @@ jobs:
               git push
           fi
       - name: Extract enemy spine assets
-        if: extract_absteps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.condition == 'true'
         id: extract-enemy-spine
         run: |
           source scripts/extract_ab.sh
@@ -192,7 +192,7 @@ jobs:
               git push
           fi
       - name: Extract operator spine assets
-        if: extract_absteps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.condition == 'true'
         id: extract-operator-spine
         run: |
           FILES=chararts/char*.ab
@@ -220,7 +220,7 @@ jobs:
               git push
           fi
       - name: Extract stage assets
-        if: extract_absteps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.condition == 'true'
         run: |
           source scripts/extract_ab.sh
 
