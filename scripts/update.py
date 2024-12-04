@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import time
@@ -15,23 +16,36 @@ import requests
 #     wget $ASSETS_URL/$(echo '$FILENAME' | sed -e 's|/|_|g' -e 's|#|__|' -e 's|\..*|.dat|g')
 # done
 
-network_config = requests.get('https://ak-conf.hypergryph.com/config/prod/b/network_config').json()
+parser = argparse.ArgumentParser(description='Download Arknights assets.')
+parser.add_argument('-s', '--server', choices=['cn', 'en'], help='Server to download assets from.', default='cn')
+parser.add_argument('-d', '--download-dir', help='Directory to download assets to.', default='download')
+parser.add_argument('-hu', '--hot-update-list', help='Specified hot_update_list file to use.', default='hot_update_list.json')
+args = parser.parse_args()
+
+server_urls = {
+    'cn': 'https://ak-conf.hypergryph.com/config/prod/b/network_config',
+    'en': 'https://ak-conf.arknights.global/config/prod/official/network_config'
+}
+server_url = server_urls[args.server]
+download_dir = args.download_dir
+hot_update_list_file = args.hot_update_list
+
+network_config = requests.get(server_url).json()
 network_contents = json.loads(network_config['content'])
 network_urls = network_contents['configs'][network_contents['funcVer']]['network']
 res_version = requests.get(network_urls['hv'].replace('{0}', 'Android')).json()['resVersion']
 assets_url = f'{network_urls["hu"]}/Android/assets/{res_version}'
 
-if not os.path.exists('hot_update_list.json') or os.stat('hot_update_list.json').st_size == 0:
+if not os.path.exists(hot_update_list_file) or os.stat(hot_update_list_file).st_size == 0:
     old_hot_update_list = {'versionId': '', 'abInfos': []}
 else:
-    with open('hot_update_list.json', 'r') as f:
+    with open(hot_update_list_file, 'r') as f:
         old_hot_update_list = json.load(f)
 
 if(old_hot_update_list['versionId'] == res_version):
     print('Up to date.')
     exit(0)
 
-download_dir = 'download'
 os.makedirs(download_dir, exist_ok=True)
 hot_update_list = requests.get(f'{assets_url}/hot_update_list.json').json()
 for item in hot_update_list['abInfos']:
@@ -51,7 +65,6 @@ for item in hot_update_list['abInfos']:
             with open(f'{download_dir}/{filename}', 'wb') as f:
                 f.write(response.content)
             os.system(f'unzip -q {download_dir}/{filename} -d {download_dir}/')
-            time.sleep(0.5)
             os.remove(f'{download_dir}/{filename}')
             break
         except requests.exceptions.RequestException as e:
@@ -61,6 +74,6 @@ for item in hot_update_list['abInfos']:
             else:
                 time.sleep(attempt + 1)
 
-with open('hot_update_list.json', 'w') as f:
+with open(hot_update_list_file, 'w') as f:
     f.write(json.dumps(hot_update_list))
-    print('Updated hot_update_list.json')
+    print('Updated ' + hot_update_list_file)
