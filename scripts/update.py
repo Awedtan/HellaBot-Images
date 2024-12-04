@@ -19,7 +19,7 @@ import requests
 parser = argparse.ArgumentParser(description='Download Arknights assets.')
 parser.add_argument('-s', '--server', choices=['cn', 'en'], help='Server to download assets from.', default='cn')
 parser.add_argument('-d', '--download-dir', help='Directory to download assets to.', default='download')
-parser.add_argument('-hu', '--hot-update-list', help='Specified hot_update_list file to use.', default='hot_update_list.json')
+parser.add_argument('-hu', '--hot-update-list', help='Specified hot_update_list file to use.', default='cn-hot_update_list.json')
 args = parser.parse_args()
 
 server_urls = {
