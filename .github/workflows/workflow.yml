@@ -94,8 +94,6 @@ jobs:
           extract_ab "spritepack/ui_equip_big_img_hub_*.ab" "operator/modules" "--filter-by-text uniequip -t sprite -g none --log-level warning"
           extract_ab "spritepack/skill_icons_*.ab" "operator/skills" "--filter-by-text skill_icon -t sprite -g none --log-level warning"
 
-          find scripts/extracted/operator -type f -name "*.png" -exec mogrify -strip {} +
-
           cd scripts/extracted/operator
           # remove '_#number' at end of filenames
           find . -name "*_#*.png" -print0 | while IFS= read -r -d '' file; do
@@ -120,8 +118,6 @@ jobs:
 
           extract_ab "spritepack/ui_roguelike*.ab" "rogue/items" "-t sprite -g none --log-level warning"
 
-          find scripts/extracted/rogue -type f -name "*.png" -exec mogrify -strip {} +
-
           cp -r scripts/extracted/rogue/* rogue/
           git add rogue/
           if git diff-index --quiet HEAD --; then
@@ -138,8 +134,6 @@ jobs:
           extract_ab "ui/sandboxperm/[uc]common.ab" "sandbox/items" "--filter-by-text itemicon -t sprite -g none --log-level warning"
           extract_ab "spritepack/sandbox*.ab" "sandbox/stages" "-t sprite -g none --log-level warning"
           extract_ab "ui/sandboxv2/topics/[uc]sandbox_1.ab" "sandbox/weather" "--filter-by-text weathertypeicons -t sprite -g none --log-level warning"
-
-          find scripts/extracted/sandbox -type f -name "*.png" -exec mogrify -strip {} +
 
           cp -r scripts/extracted/sandbox/* sandbox/
           git add sandbox/
@@ -173,8 +167,6 @@ jobs:
           find . -name "*_deco.png" -type f -exec rm -f {} \;
           cd ../../..
 
-          find scripts/extracted/skingroups -type f -name "*.png" -exec mogrify -strip {} +
-
           cp -r scripts/extracted/skingroups/* skingroups/
           git add skingroups/
           if git diff-index --quiet HEAD --; then
@@ -191,8 +183,6 @@ jobs:
 
           extract_ab "battle/prefabs/enemies/enemy*.ab" "spine/enemy" "-t tex2d,textAsset -g none --log-level warning"
           python3 scripts/spine_enemy.py scripts/extracted/spine/enemy
-
-          find scripts/extracted/spine/enemy -type f -name "*.png" -exec mogrify -strip {} +
 
           cp -r scripts/extracted/spine/enemy/* spine/enemy/
           git add spine/enemy/
@@ -221,8 +211,6 @@ jobs:
           cp -f scripts/apk/assets/AB/Android/$FILES scripts/assets/$FOLDER || :
           cp -f scripts/download/$FILES scripts/assets/$FOLDER || :
           python3 scripts/spine_char.py scripts/assets/$FOLDER scripts/extracted/$FOLDER
-
-          find scripts/extracted/spine/operator -type f -name "*.png" -exec mogrify -strip {} +
 
           cp -r scripts/extracted/spine/operator/* spine/operator/
           git add spine/operator/
