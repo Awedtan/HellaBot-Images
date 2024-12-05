@@ -44,7 +44,7 @@ jobs:
         id: download-assets
         working-directory: scripts
         run: |
-          python3 update.py -s ${{ inputs.server }} -hu ${{ inputs.server }}_hot_update_list.json | tee update.out
+          python3 update.py -s ${{ inputs.server }} -hu hot_update_list_${{ inputs.server }}.json | tee update.out
           if [[ $(cat update.out) == *"Up to date"* ]]; then
             echo "condition=false" >> $GITHUB_OUTPUT
           else
@@ -72,15 +72,15 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          VERSION=$(cat ${{ inputs.server }}_hot_update_list.json | jq -r .versionId)
+          VERSION=$(cat hot_update_list_${{ inputs.server }}.json | jq -r .versionId)
           BRANCH_NAME=${{ inputs.server }}-$VERSION
           git checkout -b $BRANCH_NAME
-          git add ${{ inputs.server }}_hot_update_list.json
+          git add hot_update_list_${{ inputs.server }}.json
           git add ${{ inputs.server }}_apk_url
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit."
           else
-            git commit -am "Update ${{ inputs.server }}_hot_update_list.json"
+            git commit -am "Update hot_update_list_${{ inputs.server }}.json"
           fi
           git push -f --set-upstream origin $BRANCH_NAME
           echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
@@ -336,10 +336,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: |
-            !*.png
-            *
-          sparse-checkout-cone-mode: false
+          sparse-checkout: .github
       - name: Create pull request
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
