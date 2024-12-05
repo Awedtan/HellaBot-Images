@@ -57,10 +57,9 @@ jobs:
           if [ -f "${{ inputs.server }}_apk_url" ]; then
             LOCAL_URL=$(cat ${{ inputs.server }}_apk_url)
           fi
-          REMOTE_SRC=$(python3 download_apk.py -s ${{ inputs.server }})
-          REMOTE_URL=$(echo $REMOTE_SRC | grep .apk | head -n 1 | sed -E 's/.+<a href="https:\/\/pkg\.bili/https:\/\/pkg\.bili/' | sed -E 's/\.apk.+/\.apk/')
+          REMOTE_URL=$(python3 download_apk.py -s ${{ inputs.server }})
+          echo $REMOTE_URL
           if [[ $LOCAL_URL != $REMOTE_URL ]]; then
-            echo $REMOTE_SRC
             unzip -q ${{ inputs.server }}.apk -d apk
             rm ${{ inputs.server }}.apk
             echo $REMOTE_URL > ${{ inputs.server }}_apk_url
