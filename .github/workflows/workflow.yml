@@ -353,4 +353,4 @@ jobs:
       - name: Create pull request
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: gh pr create --title "[UPDATE] ${{ needs.update.outputs.branch-name }}" --body "Merge ${{ needs.update.outputs.branch-name }} into main" --base main --head ${{ needs.update.outputs.branch-name }}
+        run: gh pr create --title "[UPDATE] ${{ needs.update.outputs.branch-name }}" --body "Merge ${{ needs.update.outputs.branch-name }} into main" --base reuse-workflow-cn-test --head ${{ needs.update.outputs.branch-name }}
