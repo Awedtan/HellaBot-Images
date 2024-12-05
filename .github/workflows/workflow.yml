@@ -1,0 +1,342 @@
+name: Update workflow
+
+on:
+  workflow_call:
+    inputs:
+      server:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    name: Download assets
+    runs-on: ubuntu-latest
+    outputs: # https://stackoverflow.com/questions/70287603/dynamic-outputs-for-job-with-strategy-matrix
+      branch-name: ${{ steps.checkout-branch.outputs.branch-name }}
+      enemy-spine-condition: ${{ steps.extract-enemy-spine.outputs.condition }}
+      operator-spine-condition: ${{ steps.extract-operator-spine.outputs.condition }}
+      update-condition: ${{ steps.download-assets.outputs.condition }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          sparse-checkout: |
+            !*.png
+            *
+          sparse-checkout-cone-mode: false
+      - name: Install dependencies
+        working-directory: scripts
+        run: |
+          sudo apt install python3 python3-pip dotnet6 jq imagemagick
+          pip install numpy playwright unitypy==1.10.14 requests
+          pip install -U attrs
+          playwright install
+          playwright install-deps
+          wget -nv https://github.com/aelurum/AssetStudio/releases/download/ak-v1.1.0/ArknightsStudioCLI_net6_linux64.zip
+          unzip ArknightsStudioCLI_net6_linux64.zip -d ArknightsStudioCLI
+          rm ArknightsStudioCLI_net6_linux64.zip
+          sudo chmod +x ArknightsStudioCLI/ArknightsStudioCLI
+          echo "$(pwd)/ArknightsStudioCLI" >> "$GITHUB_PATH"
+      - name: Download assets
+        id: download-assets
+        working-directory: scripts
+        run: |
+          python3 download_ab.py -s ${{ inputs.server }} -hu hot_update_list_${{ inputs.server }}.json | tee update.out
+          if [[ $(cat update.out) == *"Up to date"* ]]; then
+            echo "condition=false" >> $GITHUB_OUTPUT
+          else
+            echo "condition=true" >> $GITHUB_OUTPUT
+          fi
+      - name: Download APK
+        if: steps.download-assets.outputs.condition == 'true'
+        working-directory: scripts
+        run: |
+          if [ -f "${{ inputs.server }}_apk_url" ]; then
+            LOCAL_URL=$(cat ${{ inputs.server }}_apk_url)
+          fi
+          REMOTE_URL=$(python3 download_apk.py -s ${{ inputs.server }})
+          echo $REMOTE_URL
+          if [[ $LOCAL_URL != $REMOTE_URL ]]; then
+            unzip -q ${{ inputs.server }}.apk -d apk
+            rm ${{ inputs.server }}.apk
+            echo $REMOTE_URL > ${{ inputs.server }}_apk_url
+          fi
+      - name: Checkout branch
+        if: steps.download-assets.outputs.condition == 'true'
+        id: checkout-branch
+        working-directory: scripts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          VERSION=$(cat hot_update_list_${{ inputs.server }}.json | jq -r .versionId)
+          BRANCH_NAME=${{ inputs.server }}-$VERSION
+          git checkout -b $BRANCH_NAME
+          git add hot_update_list_${{ inputs.server }}.json
+          git add ${{ inputs.server }}_apk_url
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to commit."
+          else
+            git commit -am "Update hot_update_list_${{ inputs.server }}.json"
+          fi
+          git push -f --set-upstream origin $BRANCH_NAME
+          echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+      - name: Extract operator assets
+        if: steps.download-assets.outputs.condition == 'true'
+        run: |
+          source scripts/extract_ab.sh
+
+          extract_ab "chararts/*.ab" "operator/arts" "--filter-by-text characters -t sprite -g none --log-level warning"
+          extract_ab "skinpack/*.ab" "operator/arts" "--filter-by-text characters -t sprite -g none --log-level warning"
+          extract_ab "spritepack/ui_char_avatar_*.ab" "operator/avatars" "--filter-by-text char_ -t sprite -g none --log-level warning"
+          extract_ab "spritepack/building_ui_buff_skills_h1_0.ab" "operator/bases" "--filter-by-text bskill -t sprite -g none --log-level warning"
+          extract_ab "spritepack/ui_equip_big_img_hub_*.ab" "operator/modules" "--filter-by-text uniequip -t sprite -g none --log-level warning"
+          extract_ab "spritepack/skill_icons_*.ab" "operator/skills" "--filter-by-text skill_icon -t sprite -g none --log-level warning"
+
+          cd scripts/extracted/operator
+          # remove '_#number' at end of filenames
+          find . -name "*_#*.png" -print0 | while IFS= read -r -d '' file; do
+              if [[ "$file" =~ ^(.*)_#([0-9]+)\.png$ ]]; then
+                  mv "$file" "${BASH_REMATCH[1]}.png"
+              fi
+          done
+          cd ../../..
+
+          cp -r scripts/extracted/operator/* operator/
+          git add operator/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Operator assets"
+              git push
+          fi
+      - name: Extract roguelike assets
+        if: steps.download-assets.outputs.condition == 'true'
+        run: |
+          source scripts/extract_ab.sh
+
+          extract_ab "spritepack/ui_roguelike*.ab" "rogue/items" "-t sprite -g none --log-level warning"
+
+          cp -r scripts/extracted/rogue/* rogue/
+          git add rogue/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Roguelike assets"
+              git push
+          fi
+      - name: Extract sandbox assets
+        if: steps.download-assets.outputs.condition == 'true'
+        run: |
+          source scripts/extract_ab.sh
+
+          extract_ab "ui/sandboxperm/[uc]common.ab" "sandbox/items" "--filter-by-text itemicon -t sprite -g none --log-level warning"
+          extract_ab "spritepack/sandbox*.ab" "sandbox/stages" "-t sprite -g none --log-level warning"
+          extract_ab "ui/sandboxv2/topics/[uc]sandbox_1.ab" "sandbox/weather" "--filter-by-text weathertypeicons -t sprite -g none --log-level warning"
+
+          cp -r scripts/extracted/sandbox/* sandbox/
+          git add sandbox/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Sandbox assets"
+              git push
+          fi
+      - name: Extract skingroups assets
+        if: steps.download-assets.outputs.condition == 'true'
+        run: |
+          source scripts/extract_ab.sh
+
+          extract_ab "ui/skin_groups.ab" "skingroups" "-t sprite -g none --log-level warning"
+
+          cd scripts/extracted/skingroups
+          # remove 'year#' at start of filenames
+          for file in *.png; do
+              if [[ "$file" =~ ^[0-9]{4}#(.*) ]]; then
+                  mv "$file" "${BASH_REMATCH[1]}"
+              fi
+          done
+          # remove '#number' at end of filenames
+          for file in *.png; do
+              if [[ "$file" =~ ^(.*)#([0-9]+)\.png$ ]]; then
+                  mv "$file" "${BASH_REMATCH[1]}.png"
+              fi
+          done
+          # remove all '_deco' files
+          find . -name "*_deco.png" -type f -exec rm -f {} \;
+          cd ../../..
+
+          cp -r scripts/extracted/skingroups/* skingroups/
+          git add skingroups/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Skingroups assets"
+              git push
+          fi
+      - name: Extract enemy spine assets
+        if: steps.download-assets.outputs.condition == 'true'
+        id: extract-enemy-spine
+        run: |
+          source scripts/extract_ab.sh
+
+          extract_ab "battle/prefabs/enemies/enemy*.ab" "spine/enemy" "-t tex2d,textAsset -g none --log-level warning"
+          python3 scripts/spine_enemy.py scripts/extracted/spine/enemy
+
+          cp -r scripts/extracted/spine/enemy/* spine/enemy/
+          git add spine/enemy/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+              echo "condition=false" >> $GITHUB_OUTPUT
+          else
+              git commit -m "Enemy spine assets"
+              echo "condition=true" >> $GITHUB_OUTPUT
+              git push
+          fi
+      - name: Extract operator spine assets
+        if: steps.download-assets.outputs.condition == 'true'
+        id: extract-operator-spine
+        run: |
+          FILES=chararts/char*.ab
+          FOLDER=spine/operator
+          mkdir -p scripts/assets/$FOLDER scripts/extracted/$FOLDER
+          cp -f scripts/apk/assets/AB/Android/$FILES scripts/assets/$FOLDER || :
+          cp -f scripts/download/$FILES scripts/assets/$FOLDER || :
+          python3 scripts/spine_char.py scripts/assets/$FOLDER scripts/extracted/$FOLDER
+
+          FILES=skinpack/char*.ab
+          FOLDER=spine/operator
+          mkdir -p scripts/assets/$FOLDER scripts/extracted/$FOLDER
+          cp -f scripts/apk/assets/AB/Android/$FILES scripts/assets/$FOLDER || :
+          cp -f scripts/download/$FILES scripts/assets/$FOLDER || :
+          python3 scripts/spine_char.py scripts/assets/$FOLDER scripts/extracted/$FOLDER
+
+          cp -r scripts/extracted/spine/operator/* spine/operator/
+          git add spine/operator/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+              echo "condition=false" >> $GITHUB_OUTPUT
+          else
+              git commit -m "Operator spine assets"
+              echo "condition=true" >> $GITHUB_OUTPUT
+              git push
+          fi
+      - name: Extract stage assets
+        if: steps.download-assets.outputs.condition == 'true'
+        run: |
+          source scripts/extract_ab.sh
+
+          extract_ab "arts/ui/stage_mappreview*.ab" "stages" "-t sprite -g none --log-level warning"
+
+          mogrify -strip -resize 960x540! scripts/extracted/stages/*.png
+
+          cp -r scripts/extracted/stages/* stages/
+          git add stages/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Stage assets"
+              git push
+          fi
+
+  spine:
+    name: Apply spine transparency
+    needs: update
+    if: needs.update.outputs.enemy-spine-condition == 'true' || needs.update.outputs.operator-spine-condition == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.update.outputs.branch-name }}
+          sparse-checkout: |
+            !*.png
+            *
+          sparse-checkout-cone-mode: false
+      - name: Download ArkUnpacker source
+        run: |
+          Set-Location ..
+          git clone --recurse-submodules --depth=1 --branch v3.3.0 https://github.com/isHarryh/Ark-Unpacker.git
+      - name: Install ArkUnpacker dependencies
+        run: pip install bson unitypy numpy pycryptodome flatbuffers
+      - name: Patch ArkUnpacker to encode UTF-8
+        run: (Get-Content ..\Ark-Unpacker\src\utils\GlobalMethods.py) -replace '\{text\}', '{text.encode()}' | Set-Content ..\Ark-Unpacker\src\utils\GlobalMethods.py
+      - name: Set up enemy spine inputs
+        if: needs.update.outputs.enemy-spine-condition == 'true'
+        run: |
+          @"
+          3
+          spine/enemy
+          ..\combined\enemy
+
+
+          0
+          "@ > ..\enemy.txt
+      - name: Apply enemy spine transparency
+        if: needs.update.outputs.enemy-spine-condition == 'true'
+        run: Get-Content ..\enemy.txt | python ..\Ark-Unpacker\Main.py
+      - name: Copy over combined enemy spines
+        if: needs.update.outputs.enemy-spine-condition == 'true'
+        run: Copy-Item -Path ..\combined\enemy\* -Destination spine/enemy -Recurse -Force
+      - name: Clean up files
+        if: needs.update.outputs.enemy-spine-condition == 'true'
+        run: Remove-Item .\ArkUnpackerLogs.log, .\ArkUnpackerConfig.json
+      - name: Commit enemy spine changes
+        if: needs.update.outputs.enemy-spine-condition == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add spine/enemy
+          if (git diff-index --quiet HEAD --) {
+            Write-Output "No changes to commit."
+          } else {
+            git commit -m "Enemy spine transparency"
+            git push
+          }
+      - name: Set up operator spine inputs
+        if: needs.update.outputs.operator-spine-condition == 'true'
+        run: |
+          @"
+          3
+          spine/operator
+          ..\combined\operator
+
+
+          0
+          "@ > ..\op.txt
+      - name: Apply operator spine transparency
+        if: needs.update.outputs.operator-spine-condition == 'true'
+        run: Get-Content ..\op.txt | python ..\Ark-Unpacker\Main.py
+      - name: Copy over combined operator spines
+        if: needs.update.outputs.operator-spine-condition == 'true'
+        run: Copy-Item -Path ..\combined\operator\* -Destination spine/operator -Recurse -Force
+      - name: Clean up files
+        if: needs.update.outputs.operator-spine-condition == 'true'
+        run: Remove-Item .\ArkUnpackerLogs.log, .\ArkUnpackerConfig.json
+      - name: Commit operator spine changes
+        if: needs.update.outputs.operator-spine-condition == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add spine/operator
+          if (git diff-index --quiet HEAD --) {
+            Write-Output "No changes to commit."
+          } else {
+            git commit -m "Operator spine transparency"
+            git push
+          }
+
+  pr:
+    name: Create pull request
+    needs: [update, spine]
+    if: needs.update.outputs.update-condition == 'true' && inputs.server == 'cn'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Create pull request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: gh pr create --title "[UPDATE] ${{ needs.update.outputs.branch-name }}" --body "Merge ${{ needs.update.outputs.branch-name }} into main" --base main --head ${{ needs.update.outputs.branch-name }}

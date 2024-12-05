@@ -1,6 +1,6 @@
 #!/bin/bash
 
-process_files() {
+extract_ab() {
     local FILES=$1
     local FOLDER=$2
     local OPTIONS=$3
