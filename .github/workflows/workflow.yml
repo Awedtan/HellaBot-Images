@@ -44,7 +44,7 @@ jobs:
         id: download-assets
         working-directory: scripts
         run: |
-          python3 update.py -s ${{ inputs.server }} -hu hot_update_list_${{ inputs.server }}.json | tee update.out
+          python3 download_ab.py -s ${{ inputs.server }} -hu hot_update_list_${{ inputs.server }}.json | tee update.out
           if [[ $(cat update.out) == *"Up to date"* ]]; then
             echo "condition=false" >> $GITHUB_OUTPUT
           else
