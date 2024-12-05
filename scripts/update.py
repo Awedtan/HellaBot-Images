@@ -17,9 +17,9 @@ import requests
 # done
 
 parser = argparse.ArgumentParser(description='Download Arknights assets.')
-parser.add_argument('-s', '--server', choices=['cn', 'en'], help='Server to download assets from.', default='cn')
-parser.add_argument('-d', '--download-dir', help='Directory to download assets to.', default='download')
-parser.add_argument('-hu', '--hot-update-list', help='Specified hot_update_list file to use.', default='cn-hot_update_list.json')
+parser.add_argument('-s', '--server', choices=['cn', 'en'], default='cn')
+parser.add_argument('-d', '--download-dir', default='download')
+parser.add_argument('-hu', '--hot-update-list', default='cn_hot_update_list.json')
 args = parser.parse_args()
 
 server_urls = {
@@ -42,7 +42,7 @@ else:
     with open(hot_update_list_file, 'r') as f:
         old_hot_update_list = json.load(f)
 
-if(old_hot_update_list['versionId'] == res_version):
+if (old_hot_update_list['versionId'] == res_version):
     print('Up to date.')
     exit(0)
 
