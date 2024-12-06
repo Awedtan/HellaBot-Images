@@ -49,20 +49,23 @@ jobs:
             echo "condition=false" >> $GITHUB_OUTPUT
           else
             echo "condition=true" >> $GITHUB_OUTPUT
+            if [[ "${{ inputs.server }}" == "cn" ]]; then
+              echo "extract=true" >> $GITHUB_OUTPUT
+            fi
           fi
       - name: Download APK
         if: steps.download-assets.outputs.condition == 'true'
         working-directory: scripts
         run: |
-          if [ -f "${{ inputs.server }}_apk_url" ]; then
-            LOCAL_URL=$(cat ${{ inputs.server }}_apk_url)
+          if [ -f "${{ inputs.server }}_apk_url.txt" ]; then
+            LOCAL_URL=$(cat ${{ inputs.server }}_apk_url.txt)
           fi
           REMOTE_URL=$(python3 download_apk.py -s ${{ inputs.server }})
           echo $REMOTE_URL
           if [[ $LOCAL_URL != $REMOTE_URL ]]; then
             unzip -q ${{ inputs.server }}.apk -d apk
             rm ${{ inputs.server }}.apk
-            echo $REMOTE_URL > ${{ inputs.server }}_apk_url
+            echo $REMOTE_URL > ${{ inputs.server }}_apk_url.txt
           fi
       - name: Checkout branch
         if: steps.download-assets.outputs.condition == 'true'
@@ -75,16 +78,16 @@ jobs:
           BRANCH_NAME=${{ inputs.server }}-$VERSION
           git checkout -b $BRANCH_NAME
           git add hot_update_list_${{ inputs.server }}.json
-          git add ${{ inputs.server }}_apk_url
+          git add ${{ inputs.server }}_apk_url.txt
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit."
           else
-            git commit -am "Update hot_update_list_${{ inputs.server }}.json"
+            git commit -am "Initial update"
           fi
           git push -f --set-upstream origin $BRANCH_NAME
           echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
       - name: Extract operator assets
-        if: steps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.extract == 'true'
         run: |
           source scripts/extract_ab.sh
 
@@ -113,7 +116,7 @@ jobs:
               git push
           fi
       - name: Extract roguelike assets
-        if: steps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.extract == 'true'
         run: |
           source scripts/extract_ab.sh
 
@@ -128,7 +131,7 @@ jobs:
               git push
           fi
       - name: Extract sandbox assets
-        if: steps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.extract == 'true'
         run: |
           source scripts/extract_ab.sh
 
@@ -145,7 +148,7 @@ jobs:
               git push
           fi
       - name: Extract skingroups assets
-        if: steps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.extract == 'true'
         run: |
           source scripts/extract_ab.sh
 
@@ -177,7 +180,7 @@ jobs:
               git push
           fi
       - name: Extract enemy spine assets
-        if: steps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.extract == 'true'
         id: extract-enemy-spine
         run: |
           source scripts/extract_ab.sh
@@ -196,7 +199,7 @@ jobs:
               git push
           fi
       - name: Extract operator spine assets
-        if: steps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.extract == 'true'
         id: extract-operator-spine
         run: |
           FILES=chararts/char*.ab
@@ -224,7 +227,7 @@ jobs:
               git push
           fi
       - name: Extract stage assets
-        if: steps.download-assets.outputs.condition == 'true'
+        if: steps.download-assets.outputs.extract == 'true'
         run: |
           source scripts/extract_ab.sh
 
@@ -330,7 +333,7 @@ jobs:
   pr:
     name: Create pull request
     needs: [update, spine]
-    if: needs.update.outputs.update-condition == 'true' && inputs.server == 'cn'
+    if: needs.update.outputs.update-condition == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
