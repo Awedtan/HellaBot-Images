@@ -13,7 +13,7 @@ permissions:
 jobs:
   update:
     name: Download assets
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs: # https://stackoverflow.com/questions/70287603/dynamic-outputs-for-job-with-strategy-matrix
       branch-name: ${{ steps.checkout-branch.outputs.branch-name }}
       enemy-spine-condition: ${{ steps.extract-enemy-spine.outputs.condition }}
@@ -60,6 +60,9 @@ jobs:
           if [ -f "${{ inputs.server }}_apk_url.txt" ]; then
             LOCAL_URL=$(cat ${{ inputs.server }}_apk_url.txt)
           fi
+
+          python3 -v download_apk.py -s ${{ inputs.server }}
+
           REMOTE_URL=$(python3 download_apk.py -s ${{ inputs.server }})
           echo $REMOTE_URL
           if [[ $LOCAL_URL != $REMOTE_URL ]]; then
@@ -334,7 +337,7 @@ jobs:
     name: Create pull request
     needs: [update, spine]
     if: needs.update.outputs.update-condition == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
