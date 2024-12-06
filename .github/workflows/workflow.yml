@@ -331,12 +331,6 @@ jobs:
             git push
           }
 
-  test:
-    needs: [update]
-    runs-on: ubuntu-22.04
-    steps:
-      - run: echo ${{ needs.update.outputs.update-condition }}
-
   pr:
     name: Create pull request
     needs: [update, spine]
