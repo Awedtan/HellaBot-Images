@@ -340,7 +340,7 @@ jobs:
   pr:
     name: Create pull request
     needs: [update, spine]
-    if: needs.update.outputs.update-condition == 'true'
+    if: always() && needs.update.outputs.update-condition == 'true'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
