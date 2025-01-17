@@ -57,8 +57,8 @@ jobs:
         if: steps.download-assets.outputs.condition == 'true'
         working-directory: scripts
         run: |
-          if [ -f "${{ inputs.server }}_apk_url.txt" ]; then
-            LOCAL_URL=$(cat ${{ inputs.server }}_apk_url.txt)
+          if [ -f "apk_url_${{ inputs.server }}.txt" ]; then
+            LOCAL_URL=$(cat apk_url_${{ inputs.server }}.txt)
           fi
 
           REMOTE_URL=$(python3 download_apk.py -s ${{ inputs.server }})
@@ -66,7 +66,7 @@ jobs:
           if [[ $LOCAL_URL != $REMOTE_URL ]]; then
             unzip -q ${{ inputs.server }}.apk -d apk
             rm ${{ inputs.server }}.apk
-            echo $REMOTE_URL > ${{ inputs.server }}_apk_url.txt
+            echo $REMOTE_URL > apk_url_${{ inputs.server }}.txt
           fi
       - name: Checkout branch
         if: steps.download-assets.outputs.condition == 'true'
@@ -79,7 +79,7 @@ jobs:
           BRANCH_NAME=${{ inputs.server }}-$VERSION
           git checkout -b $BRANCH_NAME
           git add hot_update_list_${{ inputs.server }}.json  || :
-          git add ${{ inputs.server }}_apk_url.txt  || :
+          git add apk_url_${{ inputs.server }}.txt  || :
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit."
           else
