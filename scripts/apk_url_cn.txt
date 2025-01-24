@@ -1,1 +1,1 @@
-https://pkg.biligame.com/games/mrfz_2.4.41_20250120_115229_883f3.apk
+Attempt 1 failed: Page.goto: Timeout 90000ms exceeded. Call log: - navigating to "https://www.biligame.com/detail/?id=101772", waiting until "networkidle" https://pkg.biligame.com/games/mrfz_2.4.41_20250120_115229_883f3.apk
