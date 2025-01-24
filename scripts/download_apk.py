@@ -51,7 +51,6 @@ def main():
                 browser.close()
                 break
         except Exception as e:
-            print(f'Attempt {attempt + 1} failed: {e}')
             if attempt == retries - 1:
                 print(f'Failed to download apk after {retries} attempts.')
 
