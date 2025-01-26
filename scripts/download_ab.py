@@ -30,7 +30,7 @@ server_urls = {
 server_url = server_urls[args.server]
 download_dir = args.download_dir
 hot_update_list_file = args.hot_update_list
-specific_downloads = args.specify_download.split(';')
+specific_downloads = args.specify_download.split(',')
 
 network_config = requests.get(server_url).json()
 network_contents = json.loads(network_config['content'])
