@@ -139,14 +139,16 @@ jobs:
           extract_ab "spritepack/ui_equip_big_img_hub_*.ab" "operator/modules" "--filter-by-text uniequip -t sprite -g none --log-level warning"
           extract_ab "spritepack/skill_icons_*.ab" "operator/skills" "--filter-by-text skill_icon -t sprite -g none --log-level warning"
 
-          cd scripts/extracted/operator
-          # remove '_#number' at end of filenames
-          find . -name "*_#*.png" -print0 | while IFS= read -r -d '' file; do
-              if [[ "$file" =~ ^(.*)_#([0-9]+)\.png$ ]]; then
-                  mv "$file" "${BASH_REMATCH[1]}.png"
-              fi
-          done
-          cd ../../..
+          if [ -d scripts/extracted/operator ]; then
+            cd scripts/extracted/operator
+            # remove '_#number' at end of filenames
+            find . -name "*_#*.png" -print0 | while IFS= read -r -d '' file; do
+                if [[ "$file" =~ ^(.*)_#([0-9]+)\.png$ ]]; then
+                    mv "$file" "${BASH_REMATCH[1]}.png"
+                fi
+            done
+            cd ../../..
+          fi
 
           mkdir -p operator
           cp -r scripts/extracted/operator/* operator/ || :
@@ -282,7 +284,9 @@ jobs:
 
           extract_ab "arts/ui/stage_mappreview*.ab" "stages" "-t sprite -g none --log-level warning"
 
-          mogrify -strip -resize 960x540! scripts/extracted/stages/*.png
+          if [ -d scripts/extracted/stages ]; then
+            mogrify -strip -resize 960x540! scripts/extracted/stages/*.png
+          fi
 
           mkdir -p stages
           cp -r scripts/extracted/stages/* stages/ || :

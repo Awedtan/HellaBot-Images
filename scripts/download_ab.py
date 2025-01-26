@@ -81,4 +81,4 @@ for item in hot_update_list['abInfos']:
 
 with open(hot_update_list_file, 'w') as f:
     f.write(json.dumps(hot_update_list))
-    print(f'Updated {hot_update_list_file}: {old_hot_update_list['versionId']} -> {res_version}')
+    print(f'Updated {hot_update_list_file}: {old_hot_update_list.versionId} -> {res_version}')
