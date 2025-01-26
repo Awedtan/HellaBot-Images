@@ -44,7 +44,7 @@ else:
     with open(hot_update_list_file, 'r') as f:
         old_hot_update_list = json.load(f)
 
-if (old_hot_update_list['versionId'] == res_version):
+if (old_hot_update_list['versionId'] == res_version and not specific_downloads):
     print('Up to date.')
     exit(0)
 
