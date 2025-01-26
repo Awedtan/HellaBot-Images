@@ -87,6 +87,22 @@ jobs:
           fi
           git push -f --set-upstream origin $BRANCH_NAME
           echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+      - name: Extract enemy assets
+        if: steps.download-assets.outputs.extract == 'true'
+        run: |
+          source scripts/extract_ab.sh
+
+          extract_ab "spritepack/icon_enemies_*.ab" "enemy" "-t sprite -g none --log-level warning"
+
+          mkdir -p enemy
+          cp -r scripts/extracted/enemy/* enemy/
+          git add enemy/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Enemy assets"
+              git push
+          fi
       - name: Extract item assets
         if: steps.download-assets.outputs.extract == 'true'
         run: |
