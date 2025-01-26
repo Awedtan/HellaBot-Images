@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(description='Download Arknights assets.')
 parser.add_argument('-s', '--server', choices=['cn', 'en'], default='cn')
 parser.add_argument('-d', '--download-dir', default='download')
 parser.add_argument('-hu', '--hot-update-list', default='hot_update_list_cn.json')
+parser.add_argument('-sd', '--specify-download', default='')
 args = parser.parse_args()
 
 server_urls = {
@@ -29,6 +30,7 @@ server_urls = {
 server_url = server_urls[args.server]
 download_dir = args.download_dir
 hot_update_list_file = args.hot_update_list
+specific_downloads = args.specify_download.split(';')
 
 network_config = requests.get(server_url).json()
 network_contents = json.loads(network_config['content'])
@@ -52,6 +54,8 @@ for item in hot_update_list['abInfos']:
     filename = item['name']
     hash = item['hash']
 
+    if specific_downloads and filename not in specific_downloads:
+        continue
     if any(x for x in old_hot_update_list['abInfos'] if x['name'] == filename and x['hash'] == hash):
         continue
 

@@ -2,6 +2,11 @@ name: Update assets
 
 on:
   workflow_dispatch:
+    inputs:
+      specific_downloads:
+        description: 'Specific ABs to download'
+        required: false
+        default: ''
   schedule:
     - cron:  '0 */6 * * *'
 
@@ -19,3 +24,4 @@ jobs:
     secrets: inherit
     with:
       server: ${{ matrix.server }}
+      specific_downloads: ${{ github.event.inputs.specific_downloads }}
