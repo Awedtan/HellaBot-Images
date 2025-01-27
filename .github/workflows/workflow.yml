@@ -6,6 +6,9 @@ on:
       server:
         required: true
         type: string
+      specific_downloads:
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -44,7 +47,12 @@ jobs:
         id: download-assets
         working-directory: scripts
         run: |
-          python3 download_ab.py -s ${{ inputs.server }} -hu hot_update_list_${{ inputs.server }}.json | tee update.out
+          python3 download_ab.py \
+            -s ${{ inputs.server }} \
+            -hu hot_update_list_${{ inputs.server }}.json \
+            -sd "${{ inputs.specific_downloads }}" \
+          | tee update.out
+
           if [[ $(cat update.out) == *"Up to date"* ]]; then
             echo "condition=false" >> $GITHUB_OUTPUT
           else
@@ -87,6 +95,22 @@ jobs:
           fi
           git push -f --set-upstream origin $BRANCH_NAME
           echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+      - name: Extract enemy assets
+        if: steps.download-assets.outputs.extract == 'true'
+        run: |
+          source scripts/extract_ab.sh
+
+          extract_ab "spritepack/icon_enemies_*.ab" "enemy" "-t sprite -g none --log-level warning"
+
+          mkdir -p enemy
+          cp -r scripts/extracted/enemy/* enemy/ || :
+          git add enemy/
+          if git diff-index --quiet HEAD --; then
+              echo "No changes to commit."
+          else
+              git commit -m "Enemy assets"
+              git push
+          fi
       - name: Extract item assets
         if: steps.download-assets.outputs.extract == 'true'
         run: |
@@ -95,7 +119,7 @@ jobs:
           extract_ab "spritepack/ui_item_*.ab" "items" "-t sprite -g none --log-level warning"
 
           mkdir -p items
-          cp -r scripts/extracted/items/* items/
+          cp -r scripts/extracted/items/* items/ || :
           git add items/
           if git diff-index --quiet HEAD --; then
               echo "No changes to commit."
@@ -115,17 +139,19 @@ jobs:
           extract_ab "spritepack/ui_equip_big_img_hub_*.ab" "operator/modules" "--filter-by-text uniequip -t sprite -g none --log-level warning"
           extract_ab "spritepack/skill_icons_*.ab" "operator/skills" "--filter-by-text skill_icon -t sprite -g none --log-level warning"
 
-          cd scripts/extracted/operator
-          # remove '_#number' at end of filenames
-          find . -name "*_#*.png" -print0 | while IFS= read -r -d '' file; do
-              if [[ "$file" =~ ^(.*)_#([0-9]+)\.png$ ]]; then
-                  mv "$file" "${BASH_REMATCH[1]}.png"
-              fi
-          done
-          cd ../../..
+          if [ -d scripts/extracted/operator ]; then
+            cd scripts/extracted/operator
+            # remove '_#number' at end of filenames
+            find . -name "*_#*.png" -print0 | while IFS= read -r -d '' file; do
+                if [[ "$file" =~ ^(.*)_#([0-9]+)\.png$ ]]; then
+                    mv "$file" "${BASH_REMATCH[1]}.png"
+                fi
+            done
+            cd ../../..
+          fi
 
           mkdir -p operator
-          cp -r scripts/extracted/operator/* operator/
+          cp -r scripts/extracted/operator/* operator/ || :
           git add operator/
           if git diff-index --quiet HEAD --; then
               echo "No changes to commit."
@@ -141,7 +167,7 @@ jobs:
           extract_ab "spritepack/ui_roguelike*.ab" "rogue/items" "-t sprite -g none --log-level warning"
 
           mkdir -p rogue
-          cp -r scripts/extracted/rogue/* rogue/
+          cp -r scripts/extracted/rogue/* rogue/ || :
           git add rogue/
           if git diff-index --quiet HEAD --; then
               echo "No changes to commit."
@@ -159,7 +185,7 @@ jobs:
           extract_ab "ui/sandboxv2/topics/[uc]sandbox_1.ab" "sandbox/weather" "--filter-by-text weathertypeicons -t sprite -g none --log-level warning"
 
           mkdir -p sandbox
-          cp -r scripts/extracted/sandbox/* sandbox/
+          cp -r scripts/extracted/sandbox/* sandbox/ || :
           git add sandbox/
           if git diff-index --quiet HEAD --; then
               echo "No changes to commit."
@@ -194,7 +220,7 @@ jobs:
           fi
 
           mkdir -p skingroups
-          cp -r scripts/extracted/skingroups/* skingroups/
+          cp -r scripts/extracted/skingroups/* skingroups/ || :
           git add skingroups/
           if git diff-index --quiet HEAD --; then
               echo "No changes to commit."
@@ -212,7 +238,7 @@ jobs:
           python3 scripts/spine_enemy.py scripts/extracted/spine/enemy
 
           mkdir -p spine/enemy
-          cp -r scripts/extracted/spine/enemy/* spine/enemy/
+          cp -r scripts/extracted/spine/enemy/* spine/enemy/ || :
           git add spine/enemy/
           if git diff-index --quiet HEAD --; then
               echo "No changes to commit."
@@ -241,7 +267,7 @@ jobs:
           python3 scripts/spine_char.py scripts/assets/$FOLDER scripts/extracted/$FOLDER
 
           mkdir -p spine/operator
-          cp -r scripts/extracted/spine/operator/* spine/operator/
+          cp -r scripts/extracted/spine/operator/* spine/operator/ || :
           git add spine/operator/
           if git diff-index --quiet HEAD --; then
               echo "No changes to commit."
@@ -258,10 +284,12 @@ jobs:
 
           extract_ab "arts/ui/stage_mappreview*.ab" "stages" "-t sprite -g none --log-level warning"
 
-          mogrify -strip -resize 960x540! scripts/extracted/stages/*.png
+          if ls scripts/extracted/stages/*.png 1> /dev/null 2>&1; then
+            mogrify -strip -resize 960x540! scripts/extracted/stages/*.png
+          fi
 
           mkdir -p stages
-          cp -r scripts/extracted/stages/* stages/
+          cp -r scripts/extracted/stages/* stages/ || :
           git add stages/
           if git diff-index --quiet HEAD --; then
               echo "No changes to commit."

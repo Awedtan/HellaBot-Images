@@ -17,9 +17,10 @@ import requests
 # done
 
 parser = argparse.ArgumentParser(description='Download Arknights assets.')
-parser.add_argument('-s', '--server', choices=['cn', 'en'], default='cn')
+parser.add_argument('-s', '--server', choices=['cn', 'en'], default='cn', required=False)
 parser.add_argument('-d', '--download-dir', default='download')
 parser.add_argument('-hu', '--hot-update-list', default='hot_update_list_cn.json')
+parser.add_argument('-sd', '--specify-download', default='')
 args = parser.parse_args()
 
 server_urls = {
@@ -29,6 +30,7 @@ server_urls = {
 server_url = server_urls[args.server]
 download_dir = args.download_dir
 hot_update_list_file = args.hot_update_list
+specific_downloads = args.specify_download.split(',') if len(args.specify_download) > 0 else []
 
 network_config = requests.get(server_url).json()
 network_contents = json.loads(network_config['content'])
@@ -42,7 +44,7 @@ else:
     with open(hot_update_list_file, 'r') as f:
         old_hot_update_list = json.load(f)
 
-if (old_hot_update_list['versionId'] == res_version):
+if (old_hot_update_list['versionId'] == res_version and not specific_downloads):
     print('Up to date.')
     exit(0)
 
@@ -52,7 +54,10 @@ for item in hot_update_list['abInfos']:
     filename = item['name']
     hash = item['hash']
 
-    if any(x for x in old_hot_update_list['abInfos'] if x['name'] == filename and x['hash'] == hash):
+    if specific_downloads:
+        if filename not in specific_downloads:
+            continue
+    elif any(x for x in old_hot_update_list['abInfos'] if x['name'] == filename and x['hash'] == hash):
         continue
 
     print(filename)
@@ -76,4 +81,4 @@ for item in hot_update_list['abInfos']:
 
 with open(hot_update_list_file, 'w') as f:
     f.write(json.dumps(hot_update_list))
-    print('Updated ' + hot_update_list_file)
+    print(f'Updated {hot_update_list_file}: {old_hot_update_list["versionId"]} -> {res_version}')
