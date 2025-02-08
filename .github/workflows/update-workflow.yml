@@ -33,9 +33,9 @@ jobs:
       - name: Install dependencies
         working-directory: scripts
         run: |
-          sudo apt install python3 python3-pip dotnet6 jq imagemagick
-          pip install numpy playwright unitypy==1.10.14 requests
-          pip install -U attrs
+          sudo apt update
+          sudo apt install dotnet6 imagemagick jq python3 python3-pip 
+          pip install -r requirements.txt
           playwright install
           playwright install-deps
           wget -nv https://github.com/aelurum/AssetStudio/releases/download/ak-v1.1.0/ArknightsStudioCLI_net6_linux64.zip
@@ -91,7 +91,7 @@ jobs:
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit."
           else
-            git commit -am "Update list and APK"
+            git commit -am "update: ${{ needs.update.outputs.branch-name }}"
           fi
           git push -f --set-upstream origin $BRANCH_NAME
           echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
@@ -396,4 +396,5 @@ jobs:
       - name: Create pull request
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: gh pr create --title "[UPDATE] ${{ needs.update.outputs.branch-name }}" --body "Merge ${{ needs.update.outputs.branch-name }} into main" --base main --head ${{ needs.update.outputs.branch-name }}
+        run: |
+          gh pr create --title "update: ${{ needs.update.outputs.branch-name }}" --body "Merge ${{ needs.update.outputs.branch-name }} into main" --base main --head ${{ needs.update.outputs.branch-name }} || :
