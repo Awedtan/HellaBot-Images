@@ -18,9 +18,11 @@ import requests
 
 parser = argparse.ArgumentParser(description='Download Arknights assets.')
 parser.add_argument('-s', '--server', choices=['cn', 'en'], default='cn', required=False)
-parser.add_argument('-d', '--download-dir', default='download')
-parser.add_argument('-hu', '--hot-update-list', default='hot_update_list_cn.json')
-parser.add_argument('-sd', '--specify-download', default='')
+parser.add_argument('-dd', '--download-dir', default='download')
+parser.add_argument('-hu', '--hot-update-list', default='hot_update_list_{0}.json')
+parser.add_argument('-io', '--ignore-old', action='store_true')
+parser.add_argument('-fd', '--filter-downloads', default='')
+parser.add_argument('-sd', '--specify-downloads', default='')
 args = parser.parse_args()
 
 server_urls = {
@@ -29,8 +31,10 @@ server_urls = {
 }
 server_url = server_urls[args.server]
 download_dir = args.download_dir
-hot_update_list_file = args.hot_update_list
-specific_downloads = args.specify_download.split(',') if len(args.specify_download) > 0 else []
+hot_update_list_file = args.hot_update_list.format(args.server)
+ignore_old = args.ignore_old
+filter_downloads = args.filter_downloads.split(',') if len(args.filter_downloads) > 0 else []
+specific_downloads = args.specify_downloads.split(',') if len(args.specify_downloads) > 0 else []
 
 network_config = requests.get(server_url).json()
 network_contents = json.loads(network_config['content'])
@@ -44,7 +48,7 @@ else:
     with open(hot_update_list_file, 'r') as f:
         old_hot_update_list = json.load(f)
 
-if (old_hot_update_list['versionId'] == res_version and not specific_downloads):
+if not specific_downloads and not ignore_old and old_hot_update_list['versionId'] == res_version:
     print('Up to date.')
     exit(0)
 
@@ -55,10 +59,15 @@ for item in hot_update_list['abInfos']:
     hash = item['hash']
 
     if specific_downloads:
-        if filename not in specific_downloads:
+        if filename in specific_downloads:
+            pass
+        else:
             continue
-    elif any(x for x in old_hot_update_list['abInfos'] if x['name'] == filename and x['hash'] == hash):
+    elif not ignore_old and any(x for x in old_hot_update_list['abInfos'] if x['name'] == filename and x['hash'] == hash):
         continue
+    elif filter_downloads:
+        if not any(x in filename for x in filter_downloads):
+            continue
 
     print(filename)
     filename = filename.replace('/', '_').replace('#', '__').split('.')[0] + '.dat'
