@@ -1,6 +1,16 @@
 name: Update workflow
 
 on:
+  workflow_dispatch:
+    inputs:
+      server:
+        description: 'Server to download assets from'
+        required: true
+        type: string
+      specific_downloads:
+        description: 'Specific ABs to download'
+        required: false
+        type: string
   workflow_call:
     inputs:
       server:
@@ -71,7 +81,7 @@ jobs:
 
           REMOTE_URL=$(python3 download_apk.py -s ${{ inputs.server }})
           echo $REMOTE_URL
-          if [[ $LOCAL_URL != $REMOTE_URL ]]; then
+          if [[ *$LOCAL_URL* != $REMOTE_URL ]]; then
             unzip -q ${{ inputs.server }}.apk -d apk
             rm ${{ inputs.server }}.apk
             echo $REMOTE_URL > apk_url_${{ inputs.server }}.txt

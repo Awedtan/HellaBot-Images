@@ -1,4 +1,4 @@
-name: Update assets
+name: Scheduled update
 
 on:
   workflow_dispatch:
