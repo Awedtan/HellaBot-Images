@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         server: [cn, en]
-    uses: ./.github/workflows/workflow.yml
+    uses: ./.github/workflows/update-workflow.yml
     secrets: inherit
     with:
       server: ${{ matrix.server }}

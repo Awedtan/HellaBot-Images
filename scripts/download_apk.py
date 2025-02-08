@@ -68,7 +68,7 @@ def download_apk(server, url):
         except requests.exceptions.RequestException as e:
             print(f'Download attempt {attempt + 1} failed: {e}')
             if attempt == retries - 1:
-                print(f'Failed to download apk after {retries} attempts.')
+                print(f'Failed to download APK after {retries} attempts.')
                 exit(1)
 
 
