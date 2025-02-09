@@ -133,21 +133,17 @@ jobs:
 
           for file in scripts/extracted/gamedata/excel/*.bytes; do
             BASE_NAME=$(basename $file .bytes)
-            if [[ ${#BASE_NAME} -gt 6 ]]; then
-              TRIM_NAME="${BASE_NAME:0:-6}"
-            fi
-            dd if=$file of="$BASE_NAME.out" bs=128 skip=1
-
-            echo $BASE_NAME
 
             if [[ -f "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" ]]; then
-              echo hey
-              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" -- "$BASE_NAME.out" --json --raw-binary --natural-utf8 --no-warnings
-            elif [[ -f "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" ]]; then
-              echo asdf
-              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" -- "$BASE_NAME.out" --json --raw-binary --natural-utf8 --no-warnings
+              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" -- "$BASE_NAME.bytes" --json --raw-binary --natural-utf8 --no-warnings
             else
-              echo "No FBS file found for $BASE_NAME"
+              TRIM_NAME="${BASE_NAME:0:-6}"
+              dd if=$file of="$BASE_NAME.out" bs=128 skip=1
+              if [[ -f "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" ]]; then
+                flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" -- "$BASE_NAME.out" --json --raw-binary --natural-utf8 --no-warnings
+              else
+                echo "No FBS file found for $BASE_NAME"
+              fi
             fi
           done
 
