@@ -135,7 +135,7 @@ jobs:
             BASE_NAME=$(basename $file .bytes)
 
             if [[ -f "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" ]]; then
-              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" -- "$BASE_NAME.bytes" --json --raw-binary --natural-utf8 --no-warnings
+              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" -- "$file" --json --raw-binary --natural-utf8 --no-warnings
             else
               TRIM_NAME="${BASE_NAME:0:-6}"
               dd if=$file of="$BASE_NAME.out" bs=128 skip=1
