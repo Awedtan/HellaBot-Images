@@ -131,14 +131,14 @@ jobs:
 
           mkdir -p gamedata/excel
 
-          for file in scripts/extracted/gamedata/excel/*.bytes; do
+          for FILE in scripts/extracted/gamedata/excel/*.bytes; do
             BASE_NAME=$(basename $file .bytes)
+            dd if=$FILE of="$BASE_NAME.out" bs=128 skip=1
 
             if [[ -f "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" ]]; then
-              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" -- "$file" --json --raw-binary --natural-utf8 --no-warnings
+              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" -- "$BASE_NAME.out" --json --raw-binary --natural-utf8 --no-warnings
             else
               TRIM_NAME="${BASE_NAME:0:-6}"
-              dd if=$file of="$BASE_NAME.out" bs=128 skip=1
               if [[ -f "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" ]]; then
                 flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" -- "$BASE_NAME.out" --json --raw-binary --natural-utf8 --no-warnings
               else
