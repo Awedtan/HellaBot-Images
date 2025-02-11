@@ -137,12 +137,16 @@ jobs:
 
             if [[ -f "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" ]]; then
               echo "base: $BASE_NAME"
-              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" -- "$BASE_NAME.out" --raw-binary --json --strict-json --natural-utf8 || echo "fail: $BASE_NAME"
+              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" -- "$BASE_NAME.out" --raw-binary --json --strict-json --natural-utf8 --no-warnings || \
+              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" -- "$FILE" --raw-binary --json --strict-json --natural-utf8 --no-warnings || \
+              echo "fail: $BASE_NAME"
             else
               TRIM_NAME="${BASE_NAME:0:-6}"
               if [[ -f "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" ]]; then
                 echo "trim: $TRIM_NAME"
-                flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" -- "$BASE_NAME.out" --raw-binary --json --strict-json --natural-utf8 || echo "fail: $TRIM_NAME"
+                flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" -- "$BASE_NAME.out" --raw-binary --json --strict-json --natural-utf8 --no-warnings || \
+                flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" -- "$FILE" --raw-binary --json --strict-json --natural-utf8 --no-warnings || \
+                echo "fail: $TRIM_NAME"
               else
                 echo "No FBS file found for $BASE_NAME"
               fi
