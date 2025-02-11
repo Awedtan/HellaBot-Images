@@ -136,11 +136,13 @@ jobs:
             dd if=$FILE of="$BASE_NAME.out" bs=128 skip=1
 
             if [[ -f "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" ]]; then
-              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" -- "$BASE_NAME.out" --json --raw-binary --natural-utf8 --no-warnings
+              echo "base: $BASE_NAME"
+              flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" -- "$BASE_NAME.out" --json --raw-binary --natural-utf8 || :
             else
               TRIM_NAME="${BASE_NAME:0:-6}"
               if [[ -f "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" ]]; then
-                flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" -- "$BASE_NAME.out" --json --raw-binary --natural-utf8 --no-warnings
+                echo "trim: $TRIM_NAME"
+                flatc -o gamedata/excel "scripts/OpenArknightsFBS/FBS/$TRIM_NAME.fbs" -- "$BASE_NAME.out" --json --raw-binary --natural-utf8 || :
               else
                 echo "No FBS file found for $BASE_NAME"
               fi
