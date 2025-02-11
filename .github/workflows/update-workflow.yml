@@ -132,7 +132,7 @@ jobs:
           mkdir -p gamedata/excel
 
           for FILE in scripts/extracted/gamedata/excel/*.bytes; do
-            BASE_NAME=$(basename $file .bytes)
+            BASE_NAME=$(basename $FILE .bytes)
             dd if=$FILE of="$BASE_NAME.out" bs=128 skip=1
 
             if [[ -f "scripts/OpenArknightsFBS/FBS/$BASE_NAME.fbs" ]]; then
