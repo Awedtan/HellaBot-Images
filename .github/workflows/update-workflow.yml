@@ -81,6 +81,8 @@ jobs:
 
           echo hey
 
+          python3 download_apk.py -s ${{ inputs.server }}
+
           REMOTE_URL=$(python3 download_apk.py -s ${{ inputs.server }})
           echo $REMOTE_URL
           if [[ *$LOCAL_URL* != $REMOTE_URL ]]; then
