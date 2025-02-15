@@ -76,3 +76,4 @@ if __name__ == "__main__":
     apk_url = get_apk_url(args.server)
     print(apk_url)
     download_apk(args.server, apk_url)
+    exit()

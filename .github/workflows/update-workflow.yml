@@ -79,6 +79,8 @@ jobs:
             LOCAL_URL=$(cat apk_url_${{ inputs.server }}.txt)
           fi
 
+          echo hey
+
           REMOTE_URL=$(python3 download_apk.py -s ${{ inputs.server }})
           echo $REMOTE_URL
           if [[ *$LOCAL_URL* != $REMOTE_URL ]]; then
