@@ -101,7 +101,7 @@ jobs:
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit."
           else
-            git commit -am "update: ${{ needs.update.outputs.branch-name }}"
+            git commit -am "update: $BRANCH_NAME"
           fi
           git push -f --set-upstream origin $BRANCH_NAME
           echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
