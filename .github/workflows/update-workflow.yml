@@ -79,9 +79,9 @@ jobs:
             LOCAL_URL=$(cat apk_url_${{ inputs.server }}.txt)
           fi
 
-          REMOTE_URL=$(python3 download_apk.py -s ${{ inputs.server }})
-          echo $REMOTE_URL
-          if [[ *$LOCAL_URL* != $REMOTE_URL ]]; then
+          python3 download_apk.py -s ${{ inputs.server }} -ou "$LOCAL_URL" | tee apk.out
+
+          if [[ $(cat apk.out) != *"Up to date"* ]]; then
             unzip -q ${{ inputs.server }}.apk -d apk
             rm ${{ inputs.server }}.apk
             echo $REMOTE_URL > apk_url_${{ inputs.server }}.txt
