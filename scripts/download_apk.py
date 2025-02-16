@@ -1,12 +1,13 @@
 import argparse
 import re
-from time import sleep
 import requests
 from playwright.sync_api import sync_playwright
+import sys
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--server', choices=['cn', 'en'], default='cn')
+parser.add_argument('-ou', '--old-url')
 args = parser.parse_args()
 
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.81"
@@ -27,7 +28,7 @@ def get_apk_url(server):
                     matches = re.findall(r'<a href="https://pkg\.bili[^"]+\.apk', content)
                     download_url = re.sub(r'^.*href="', '', matches[0])
 
-                    with page.expect_download() as download_info:
+                    with page.expect_download(timeout=90000) as download_info:
                         try:
                             page.goto(download_url, timeout=90000)
                         except Exception as e:
@@ -37,7 +38,7 @@ def get_apk_url(server):
                     return download.url
 
                 elif server == 'en':
-                    with page.expect_download() as download_info:
+                    with page.expect_download(timeout=90000) as download_info:
                         try:
                             page.goto("https://d.apkpure.com/b/XAPK/com.YoStarEN.Arknights?version=latest", timeout=90000)
                         except Exception as e:
@@ -49,9 +50,9 @@ def get_apk_url(server):
                 browser.close()
                 break
         except Exception as e:
-            print(f'URL attempt {attempt + 1} failed: {e}')
+            print(f'URL attempt {attempt + 1} failed: {e}', file=sys.stderr)
             if attempt == retries - 1:
-                print(f'Failed to get APK url after {retries} attempts.')
+                print(f'Failed to get APK url after {retries} attempts.', file=sys.stderr)
                 exit(1)
 
 
@@ -66,14 +67,18 @@ def download_apk(server, url):
                 f.write(response.content)
             break
         except requests.exceptions.RequestException as e:
-            print(f'Download attempt {attempt + 1} failed: {e}')
+            print(f'Download attempt {attempt + 1} failed: {e}', file=sys.stderr)
             if attempt == retries - 1:
-                print(f'Failed to download APK after {retries} attempts.')
+                print(f'Failed to download APK after {retries} attempts.', file=sys.stderr)
                 exit(1)
 
 
 if __name__ == "__main__":
     apk_url = get_apk_url(args.server)
-    print(apk_url)
+    if args.old_url:
+        if apk_url == args.old_url:
+            print('Up to date.', file=sys.stdout)
+            exit()
+    print(apk_url, file=sys.stdout)
     download_apk(args.server, apk_url)
     exit()
