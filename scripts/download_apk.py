@@ -28,14 +28,14 @@ def get_apk_url(server):
                     matches = re.findall(r'<a href="https://pkg\.bili[^"]+\.apk', content)
                     download_url = re.sub(r'^.*href="', '', matches[0])
 
-                    with page.expect_download(timeout=90000) as download_info:
-                        try:
-                            page.goto(download_url, timeout=90000)
-                        except Exception as e:
-                            if (not "Page.goto: net::ERR_ABORTED at" in str(e)):
-                                raise e
-                    download = download_info.value
-                    return download.url
+                    # with page.expect_download(timeout=90000) as download_info:
+                    #     try:
+                    #         page.goto(download_url, timeout=90000)
+                    #     except Exception as e:
+                    #         if (not "Page.goto: net::ERR_ABORTED at" in str(e)):
+                    #             raise e
+                    # download = download_info.value
+                    return download_url
 
                 elif server == 'en':
                     with page.expect_download(timeout=90000) as download_info:
